@@ -2,4 +2,5 @@ provider: ollama
 api_key: ~ 
 
 model:
-  name:
+  name: gemma4:12b
+  reasoning: false

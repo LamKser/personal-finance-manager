@@ -4,6 +4,9 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+from telegram_bot import TelegramBot
+
+
 TELEGRAM_CONFIG_PATH = "src/config/telegram.yaml"
 LLM_CONFIG_PATH = "src/config/llm.yaml"
 
@@ -13,3 +16,6 @@ with open(TELEGRAM_CONFIG_PATH, 'r') as f:
 
 with open(LLM_CONFIG_PATH, 'r') as f:
     llm_config = yaml.safe_load(f)
+
+telegram = TelegramBot(telegram_config, llm_config)
+telegram.run()
