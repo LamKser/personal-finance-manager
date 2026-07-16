@@ -3,4 +3,4 @@ api_key: ~
 
 model:
   name: gemma4:12b
-  reasoning: false
+  reasoning: true
