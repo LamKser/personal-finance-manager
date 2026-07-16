@@ -32,18 +32,18 @@ class TelegramBot:
         history = context.bot_data.setdefault(chat_id, [])
         history.append({"role": "user", "content": user_text})
 
-        # Send placeholder, then stream edits into it
-        sent: Message = await update.message.reply_text("...")
-        full_reply = await self._stream_reply(sent, history)
+        sent = await update.message.reply_text("...")
+        responses = await self._stream_reply(sent, history)
 
-        history.append({"role": "assistant", "content": full_reply})
+        history.append({"role": "assistant", "content": responses})
 
     async def _stream_reply(self, message: Message, history: list) -> str:
+        # TODO: Edit streaming
         buffer = ""
         last_edit = ""
         last_edit_time = 0.0
 
-        async for chunk in self.agent.stream(history):
+        async for chunk in self.agent.astream(history):
             buffer += chunk
             now = asyncio.get_event_loop().time()
 
