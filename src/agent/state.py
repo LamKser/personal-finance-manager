@@ -11,4 +11,5 @@ class State(TypedDict):
     tool_used: List
     max_tool_call: int
     output: str
+    total_retry_tool: int
     # token: int

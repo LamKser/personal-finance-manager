@@ -10,7 +10,6 @@ class TelegramBot:
     def __init__(self, tele_config, llm_config):
         self.tele_config = tele_config
         self.agent = LangGraphAgent(llm_config)
-        print()
 
     def command(self):
         return [
