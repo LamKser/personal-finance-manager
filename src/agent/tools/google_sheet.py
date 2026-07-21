@@ -9,8 +9,12 @@ from src.agent.tools.date_time import get_today_datetime
 def extract_transaction_information(description: str, amount: float, transaction_type: str, payment_method: str) -> Dict:
     """Extract structured transaction information from user input.
 
-    Creates a transaction record using the extracted information and assigns
-    the current date and time as the transaction timestamp.
+    Creates a transaction record using the extracted information and assigns the current date and time as the transaction timestamp.
+    In case if user input does not contain all information or missing some fields, the missing fields will be set to:
+    - `description`: "Unknown"
+    - `amount`: -1
+    - `transaction_type`: '' (Empty string)
+    - `payment_method`: '' (Empty string)
 
     Args:
         description (str): A brief description of the transaction.
