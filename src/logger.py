@@ -20,7 +20,7 @@ def get_logger(level: str = getenv("LOG_LEVEL", "INFO"),
     console_handler = logging.StreamHandler()
     file_handler = logging.FileHandler(file_name, mode="a", encoding="utf-8")
     formatter = logging.Formatter(
-        "{asctime} - {levelname} - {message}", # 2025-07-22 15:58 - WARNING - Messages
+        "{asctime} - {name} - {levelname} - {message}", # 2025-07-22 15:58 - WARNING - Messages
         style="{",
         datefmt="%Y-%m-%d %H:%M",
     )
@@ -31,5 +31,5 @@ def get_logger(level: str = getenv("LOG_LEVEL", "INFO"),
     logger.addHandler(console_handler)
     logger.addHandler(file_handler)
 
-    logger.info(f"[LOG]: Logs are saved at '{file_name}'")
+    if name == __name__: logger.info(f"[LOG]: Logs are saved at '{file_name}'")
     return logger

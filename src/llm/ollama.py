@@ -4,7 +4,7 @@ from langchain_ollama import ChatOllama
 
 from src.logger import get_logger
 
-log = get_logger()
+log = get_logger(name=__name__)
 
 class OllamaModel:
     def __init__(self, model_name: str, reasoning: bool | str | None = None):

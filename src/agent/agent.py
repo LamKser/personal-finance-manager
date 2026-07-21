@@ -1,3 +1,5 @@
+from typing_extensions import Literal
+
 from langgraph.graph import StateGraph, END, START
 from langgraph.prebuilt import ToolNode
 from langgraph.types import Command
@@ -9,7 +11,7 @@ from src.agent.tools.google_sheet import extract_transaction_information
 from src.utils.visualization .graph_visualize import GraphVisualization
 from src.logger import get_logger
 
-log = get_logger()
+log = get_logger(name=__name__)
 
 class LangGraphAgent:
     def __init__(self, config):
@@ -31,14 +33,14 @@ class LangGraphAgent:
 
         # Add edge
         graph.add_edge(START, "router")
-        graph.add_conditional_edges(
-            "router",
-            self.need_tool,
-            {
-                "need_tool": "llm-bind-tool",
-                "exit": "llm"
-            }
-        )
+        # graph.add_conditional_edges(
+        #     "router",
+        #     self.need_tool,
+        #     {
+        #         "need_tool": "llm-bind-tool",
+        #         "exit": "llm"
+        #     }
+        # )
         graph.add_edge("llm-bind-tool", "tools")
         graph.add_conditional_edges(
             "tools",
@@ -55,7 +57,8 @@ class LangGraphAgent:
     def invoke_graph(self, messages: list):
         result = self.graph.invoke(
             {"messages": messages,
-             "user_input": messages[-1]
+             "user_input": messages[-1],
+             "total_retry_tool": 0
              })
         return result
     
@@ -95,40 +98,47 @@ class LangGraphAgent:
 
         return {"messages": [bind_tool_response]} 
 
-    def router(self, state: State):
+    def router(self, state: State) -> Command[Literal["llm-bind-tool", "llm"]]:
         # TODO: Add embedding method to retrieve tool
         if "tool" in state["user_input"]:
             log.info("[Router]: Route to Tool calling")
             return Command(goto="llm-bind-tool")
+        
         log.info("[Router]: Route to LLM")
         return Command(goto="llm")
     
     # ------------------------------ Edge conditions ------------------------------
-    def need_tool(self, state: State):
-        # TODO: Add embedding method to retrieve tool
-        if "tool" in state["user_input"]:
-            return "need_tool"
-        return "exit"
+    # def need_tool(self, state: State):
+    #     # TODO: Add embedding method to retrieve tool
+    #     if "tool" in state["user_input"]:
+    #         return "need_tool"
+    #     return "exit"
     
-    def check_tool_error(self, state: State):
+    def check_tool_error(self, state: State): # TODO: Research for converting to use Command
         """Check if tool execution failed and decide whether to retry."""
         last_message = state["messages"][-1]
         
-        retry_count = state.get("total_retry_tool", 0)
+        retry_count = state["total_retry_tool"]
         max_retries = self.config["model"]["max-tool-retry"]  # Maximum number of retries
-        
+        log.info("[CHECK_TOOL_ERROR] Checking tool execution status (retry=%d/%d).", retry_count, max_retries)
+
         # Check if it's a ToolMessage with an error
         if isinstance(last_message, ToolMessage) and last_message.status == "error":
+            log.info("[CHECK_TOOL_ERROR] Tool execution failed (retry %d/%d).", retry_count + 1, max_retries)
+
             if retry_count < max_retries:
                 # Increment retry count and retry
                 state["total_retry_tool"] = retry_count + 1
+                log.info("[CHECK_TOOL_ERROR] Routing to retry node (attempt %d/%d).", retry_count + 1, max_retries)
                 return "retry"
             else:
                 # Max retries reached, continue to LLM with error context
+                log.info("[CHECK_TOOL_ERROR] Maximum tool retries (%d) reached. Routing back to LLM.", max_retries)
                 return "continue"
         
         # Success - reset retry count and continue
-        state["tool_retry_count"] = 0
+        state["total_retry_tool"] = 0
+        log.info("[CHECK_TOOL_ERROR] Tool execution succeeded. Continuing workflow.")
         return "continue"
 
     # ------------------------------ Visualization ------------------------------
