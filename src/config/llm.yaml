@@ -4,4 +4,4 @@ api_key: ~
 model:
   name: gemma4:12b
   reasoning: true
-  max-tool-retry: 2 # Number of retry tool-calling 
+  max-tool-retry: 5 # Number of retry tool-calling 
