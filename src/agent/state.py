@@ -9,7 +9,6 @@ class State(TypedDict):
     messages: Annotated[List, add_messages]
     tool_call: List
     tool_used: List
-    max_tool_call: int
     output: str
     total_retry_tool: int
     # token: int
