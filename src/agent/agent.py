@@ -3,7 +3,7 @@ from typing_extensions import Literal
 from langgraph.graph import StateGraph, END, START
 from langgraph.prebuilt import ToolNode
 from langgraph.types import Command
-from langchain_core.messages import ToolMessage
+from langchain_core.messages import ToolMessage, AIMessage
 
 from src.llm import OllamaModel
 from src.agent.state import State
@@ -28,28 +28,14 @@ class LangGraphAgent:
         graph.add_node("router", self.router)
         graph.add_node("llm-bind-tool", self.agent_bind_tool)
         graph.add_node("tools", ToolNode([extract_transaction_information]))
+        graph.add_node("check-tool-error", self.check_tool_error_node)
         graph.add_node("llm", self.llm_invoke)
         log.info("Finished adding nodes")
 
         # Add edge
         graph.add_edge(START, "router")
-        # graph.add_conditional_edges(
-        #     "router",
-        #     self.need_tool,
-        #     {
-        #         "need_tool": "llm-bind-tool",
-        #         "exit": "llm"
-        #     }
-        # )
         graph.add_edge("llm-bind-tool", "tools")
-        graph.add_conditional_edges(
-            "tools",
-            self.check_tool_error,
-            {
-                "retry": "llm-bind-tool",
-                "continue": "llm"
-            }
-        )
+        graph.add_edge("tools", "check-tool-error")
         graph.add_edge("llm", END)
         log.info("Finished adding edges")
         return graph.compile()
@@ -81,65 +67,65 @@ class LangGraphAgent:
                     yield chunk.content
     
     # ============================== Build nodes ==============================
-    # ------------------------------ Node ------------------------------
+    # ------------------------------ Nodes ------------------------------
     def llm_invoke(self, state: State):
         response = self.llm.invoke(state["messages"])
         state["output"] = response
-        log.info(f"[LLM]: {response}")
+        log.info("[NODE llm]: %r", response)
 
         return {"messages": [response]}
 
     def agent_bind_tool(self, state: State):
-        # state["tool_call"] = 
         llm_with_tools = self.llm.bind_tools([extract_transaction_information]) # TODO: add tool_retrieve from state, current is example
-        # state["tool_used"] = 
         bind_tool_response = llm_with_tools.invoke(state["messages"])
-        log.info(f"[Bind-tool]: {bind_tool_response}")
+        log.info("[NODE llm-bind-tool]: %r", bind_tool_response)
 
         return {"messages": [bind_tool_response]} 
 
     def router(self, state: State) -> Command[Literal["llm-bind-tool", "llm"]]:
         # TODO: Add embedding method to retrieve tool
         if "tool" in state["user_input"]:
-            log.info("[Router]: Route to Tool calling")
+            log.info("[NODE router]: Route to `llm-bind-tool`")
             return Command(goto="llm-bind-tool")
         
-        log.info("[Router]: Route to LLM")
+        log.info("[NODE router]: Route to `llm`")
         return Command(goto="llm")
-    
-    # ------------------------------ Edge conditions ------------------------------
-    # def need_tool(self, state: State):
-    #     # TODO: Add embedding method to retrieve tool
-    #     if "tool" in state["user_input"]:
-    #         return "need_tool"
-    #     return "exit"
-    
-    def check_tool_error(self, state: State): # TODO: Research for converting to use Command
-        """Check if tool execution failed and decide whether to retry."""
+
+    def check_tool_error_node(self, state: State) -> Command[Literal["llm-bind-tool", "llm"]]:
         last_message = state["messages"][-1]
-        
-        retry_count = state["total_retry_tool"]
-        max_retries = self.config["model"]["max-tool-retry"]  # Maximum number of retries
-        log.info("[CHECK_TOOL_ERROR] Checking tool execution status (retry=%d/%d).", retry_count, max_retries)
+        retry_count = state.get("total_retry_tool", 0)
+        max_retries = self.config["model"]["max-tool-retry"]
+       
+        log.info("[NODE check-tool-error] Checking tool status (retry=%d/%d)", retry_count, max_retries)
+        if isinstance(last_message, ToolMessage):
+            log.info("[NODE tools] - %s", last_message)
 
-        # Check if it's a ToolMessage with an error
+        # Check if tool returned an error
         if isinstance(last_message, ToolMessage) and last_message.status == "error":
-            log.info("[CHECK_TOOL_ERROR] Tool execution failed (retry %d/%d).", retry_count + 1, max_retries)
-
+            log.error("[NODE check-tool-error] Tool failed: %r", last_message.content)
+           
+            # Retry if attempts remaining
             if retry_count < max_retries:
-                # Increment retry count and retry
-                state["total_retry_tool"] = retry_count + 1
-                log.info("[CHECK_TOOL_ERROR] Routing to retry node (attempt %d/%d).", retry_count + 1, max_retries)
-                return "retry"
+                new_retry_count = retry_count + 1
+                log.info("[NODE check-tool-error] Routing to `llm-bind-tool` for retry (attempt %d/%d)", new_retry_count, max_retries)
+                return Command(
+                    goto="llm-bind-tool",
+                    update={"total_retry_tool": new_retry_count}
+                )
             else:
-                # Max retries reached, continue to LLM with error context
-                log.info("[CHECK_TOOL_ERROR] Maximum tool retries (%d) reached. Routing back to LLM.", max_retries)
-                return "continue"
-        
-        # Success - reset retry count and continue
-        state["total_retry_tool"] = 0
-        log.info("[CHECK_TOOL_ERROR] Tool execution succeeded. Continuing workflow.")
-        return "continue"
+                # Max retries exhausted
+                log.warning("[NODE check-tool-error] Max retries reached (%d/%d), routing to `llm`", retry_count, max_retries)
+                return Command(goto="llm")
+       
+        # Tool succeeded
+        log.info("[NODE check-tool-error] Tool succeeded, routing to `llm`")
+        return Command(
+            goto="llm",
+            update={"total_retry_tool": 0}
+        )
+
+
+    # ------------------------------ Edges ------------------------------
 
     # ------------------------------ Visualization ------------------------------
     def visualize_graph(self):
