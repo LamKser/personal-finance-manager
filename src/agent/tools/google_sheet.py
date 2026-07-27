@@ -10,7 +10,10 @@ def extract_transaction_information(description: str, amount: float, transaction
     """Extract structured transaction information from user input.
 
     Creates a transaction record using the extracted information and assigns the current date and time as the transaction timestamp.
-    In case if user input does not contain all information or missing some fields, the missing fields will be set to:
+    The `description` field should be summarized to provide a clear and concise description of the transaction. It does not include any personal information and amount.
+    The `transaction_type` field should be either "Thu" or "Chi". If the transaction is income, use "Thu". If the transaction is expense, use "Chi".
+    The `payment_method` field should be either "Thẻ" or "Tiền mặt". If the transaction is made by online payment, card or other digital method, use "Thẻ". If the transaction is made by cash, use "Tiền mặt".
+    In case if some fields is missing, they will be set to::
     - `description`: "Unknown"
     - `amount`: -1
     - `transaction_type`: '' (Empty string)
