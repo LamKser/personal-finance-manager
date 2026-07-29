@@ -42,11 +42,16 @@ class LangGraphAgent:
         return graph.compile()
 
     def invoke_graph(self, messages: list):
+        log.info("Prompt: %s", messages)
         result = self.graph.invoke(
             {"messages": messages,
              "user_input": messages[-1],
-             "total_retry_tool": 0
+             "total_retry_tool": 0,
+             "total_token_tool_call": 0,
+             "total_token_llm": 0,
+             "total_token": 0
              })
+        log.info("Final output: %s", result["messages"][-1].content)
         return result
     
     def stream_(self, messages: list):
@@ -74,14 +79,22 @@ class LangGraphAgent:
         state["output"] = response
         log.info("[NODE llm]: %r", response)
 
-        return {"messages": [response]}
+        return {
+            "messages": [response],
+            "total_token_llm": response.usage_metadata["total_tokens"],
+            "total_token": response.usage_metadata["total_tokens"]
+        }
 
     def agent_bind_tool(self, state: State):
         llm_with_tools = self.llm.bind_tools([extract_transaction_information]) # TODO: add tool_retrieve from state, current is example
         bind_tool_response = llm_with_tools.invoke(state["messages"])
         log.info("[NODE llm-bind-tool]: %r", bind_tool_response)
 
-        return {"messages": [bind_tool_response]} 
+        return {
+            "messages": [bind_tool_response],
+            "total_token_tool_call": bind_tool_response.usage_metadata["total_tokens"],
+            "total_token": bind_tool_response.usage_metadata["total_tokens"]
+        } 
 
     def router(self, state: State) -> Command[Literal["llm-bind-tool", "llm"]]:
         # TODO: Add embedding method to retrieve tool
@@ -116,10 +129,7 @@ class LangGraphAgent:
                 return Command(goto="llm")
        
         log.info("[NODE check-tool-error] Tool succeeded, routing to `llm`")
-        return Command(
-            goto="llm",
-            update={"total_retry_tool": 0}
-        )
+        return Command(goto="llm")
 
 
     # ------------------------------ Edges ------------------------------
