@@ -1,4 +1,5 @@
 from typing_extensions import Literal
+from logging import getLogger
 
 from langgraph.graph import StateGraph, END, START
 from langgraph.prebuilt import ToolNode
@@ -7,11 +8,11 @@ from langchain_core.messages import ToolMessage, AIMessage
 
 from src.llm import OllamaModel
 from src.agent.state import State
-from src.agent.tools.google_sheet import extract_transaction_information
+from src.agent.tools import extract_transaction_information
 from src.utils.visualization .graph_visualize import GraphVisualization
-from src.logger import get_logger
 
-log = get_logger(name=__name__)
+log = getLogger(__name__)
+
 
 class LangGraphAgent:
     def __init__(self, config):
@@ -24,7 +25,7 @@ class LangGraphAgent:
 
     def build_graph(self):
         graph = StateGraph(State)
-        # Add node
+        # Add nodes
         graph.add_node("router", self.router)
         graph.add_node("llm-bind-tool", self.agent_bind_tool)
         graph.add_node("tools", ToolNode([extract_transaction_information]))
@@ -32,7 +33,7 @@ class LangGraphAgent:
         graph.add_node("llm", self.llm_invoke)
         log.info("Finished adding nodes")
 
-        # Add edge
+        # Add edges
         graph.add_edge(START, "router")
         graph.add_edge("llm-bind-tool", "tools")
         graph.add_edge("tools", "check-tool-error")
@@ -100,11 +101,9 @@ class LangGraphAgent:
         if isinstance(last_message, ToolMessage):
             log.info("[NODE tools] - %s", last_message)
 
-        # Check if tool returned an error
         if isinstance(last_message, ToolMessage) and last_message.status == "error":
             log.error("[NODE check-tool-error] Tool failed: %r", last_message.content)
            
-            # Retry if attempts remaining
             if retry_count < max_retries:
                 new_retry_count = retry_count + 1
                 log.info("[NODE check-tool-error] Routing to `llm-bind-tool` for retry (attempt %d/%d)", new_retry_count, max_retries)
@@ -113,11 +112,9 @@ class LangGraphAgent:
                     update={"total_retry_tool": new_retry_count}
                 )
             else:
-                # Max retries exhausted
                 log.warning("[NODE check-tool-error] Max retries reached (%d/%d), routing to `llm`", retry_count, max_retries)
                 return Command(goto="llm")
        
-        # Tool succeeded
         log.info("[NODE check-tool-error] Tool succeeded, routing to `llm`")
         return Command(
             goto="llm",
