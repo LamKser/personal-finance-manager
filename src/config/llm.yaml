@@ -1,7 +1,0 @@
-provider: ollama
-api_key: ~ 
-
-model:
-  name:  gemma4:26b # gemma4:26b gpt-oss:20b
-  reasoning: true
-  max-tool-retry: 5 # Number of retry tool-calling 
