@@ -10,15 +10,16 @@ from src.llm import OllamaModel
 from src.agent.state import State
 from src.agent.tools import extract_transaction_information
 from src.utils.visualization .graph_visualize import GraphVisualization
+from src.settings import settings
+
 
 log = getLogger(__name__)
 
 
 class LangGraphAgent:
-    def __init__(self, config):
-        self.config = config
+    def __init__(self):
         self.tools = list(extract_transaction_information) # TODO: implement tools
-        self.llm = OllamaModel(config['model']['name'], config['model']['reasoning']).get_llm()
+        self.llm = OllamaModel(settings.model, settings.reasoning).get_llm()
         
         self.graph = self.build_graph()
         log.info("Successfully build graph")
@@ -108,7 +109,7 @@ class LangGraphAgent:
     def check_tool_error_node(self, state: State) -> Command[Literal["llm-bind-tool", "llm"]]:
         last_message = state["messages"][-1]
         retry_count = state.get("total_retry_tool", 0)
-        max_retries = self.config["model"]["max-tool-retry"]
+        max_retries = settings.max_tool_retry
        
         log.info("[NODE check-tool-error] Checking tool status (retry=%d/%d)", retry_count, max_retries)
         if isinstance(last_message, ToolMessage):
