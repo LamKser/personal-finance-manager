@@ -12,13 +12,16 @@ from src.agent.tools import extract_transaction_information
 from src.utils.visualization .graph_visualize import GraphVisualization
 from src.settings import settings
 
+# Tools
+from src.agent.tools.gg_sheet import get_tools
+
 
 log = getLogger(__name__)
 
 
 class LangGraphAgent:
     def __init__(self):
-        self.tools = list(extract_transaction_information) # TODO: implement tools
+        self.tools = get_tools() # TODO: implement tools
         self.llm = OllamaModel(settings.model, settings.reasoning).get_llm()
         
         self.graph = self.build_graph()
@@ -29,7 +32,7 @@ class LangGraphAgent:
         # Add nodes
         graph.add_node("router", self.router)
         graph.add_node("llm-bind-tool", self.agent_bind_tool)
-        graph.add_node("tools", ToolNode([extract_transaction_information]))
+        graph.add_node("tools", ToolNode(self.tools))
         graph.add_node("check-tool-error", self.check_tool_error_node)
         graph.add_node("llm", self.llm_invoke)
         log.info("Finished adding nodes")
@@ -87,7 +90,7 @@ class LangGraphAgent:
         }
 
     def agent_bind_tool(self, state: State):
-        llm_with_tools = self.llm.bind_tools([extract_transaction_information]) # TODO: add tool_retrieve from state, current is example
+        llm_with_tools = self.llm.bind_tools(self.tools) # TODO: add tool_retrieve from state, current is example
         bind_tool_response = llm_with_tools.invoke(state["messages"])
         log.info("[NODE llm-bind-tool]: %r", bind_tool_response)
 
