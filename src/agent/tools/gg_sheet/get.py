@@ -3,6 +3,7 @@ from typing import Dict, List
 from langchain_core.tools import tool
 
 from src.agent.tools.gg_sheet.client import client
+from src.agent.tools.gg_sheet.utils import fill_date, filter_transaction
 
 
 RANGE = "A:E"
@@ -12,7 +13,11 @@ RANGE = "A:E"
 # - Add filter amount: float=None, transaction_type: str=None, payment_method: str=None, from_date: str=None, to_date: str=None
 # - Move spreadsheet to outside
 @tool
-def get_transaction(sheet_name: str) -> List[List[str]]:
+def get_transaction(sheet_name: str,
+                    from_date: str=None, to_date: str=None,
+                    from_amount: float=None, to_amount: float=None,
+                    transaction_type: str=None, description: str=None, payment_method: str=None
+                    ) -> List[List[str]]:
     """Retrieve all transaction records from a worksheet.
 
     Fetches the cell values for the transaction details from the specified worksheet and returns them as a list of rows.
@@ -25,7 +30,10 @@ def get_transaction(sheet_name: str) -> List[List[str]]:
         The first row typically contains the header labels.
     """
     all_transaction = client.worksheet(title=sheet_name).get_all_values(range_name=RANGE)
-    return all_transaction
+    all_transaction = fill_date(all_transaction)
+    filtered_transaction = filter_transaction(all_transaction, from_date, to_date, from_amount, to_amount, transaction_type, description, payment_method)
+    del all_transaction
+    return filtered_transaction
 
 
 @tool
@@ -66,7 +74,10 @@ def get_all_transactions() -> Dict[str, List[List[str]]]:
 
 
 @tool
-def count_transaction(sheet_name: str) -> int:
+def count_transaction(sheet_name: str,
+                      from_date: str=None, to_date: str=None,
+                      from_amount: float=None, to_amount: float=None,
+                      transaction_type: str=None, description: str=None, payment_method: str=None) -> int:
     """Count the number of transaction records in a worksheet.
 
     Reads the transaction rows from the specified worksheet and returns the total number of records, excluding the header row.
@@ -77,8 +88,11 @@ def count_transaction(sheet_name: str) -> int:
     Returns:
         The number of transaction records in the worksheet (excluding the header row).
     """
-    all_transaction = client.worksheet(title=sheet_name).get_all_values(range_name=RANGE)[1:]
-    return len(all_transaction)
+    all_transaction = client.worksheet(title=sheet_name).get_all_values(range_name=RANGE)
+    all_transaction = fill_date(all_transaction)
+    filtered_transaction = filter_transaction(all_transaction, from_date, to_date, from_amount, to_amount, transaction_type, description, payment_method)
+    del all_transaction
+    return len(filtered_transaction[1:])
 
 
 @tool
