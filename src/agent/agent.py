@@ -1,14 +1,14 @@
+from typing import List
 from typing_extensions import Literal
 from logging import getLogger
 
 from langgraph.graph import StateGraph, END, START
 from langgraph.prebuilt import ToolNode
 from langgraph.types import Command
-from langchain_core.messages import ToolMessage, AIMessage
+from langchain_core.messages import ToolMessage
 
 from src.llm import OllamaModel
 from src.agent.state import State
-from src.agent.tools import extract_transaction_information
 from src.utils.visualization .graph_visualize import GraphVisualization
 from src.settings import settings
 
@@ -58,14 +58,14 @@ class LangGraphAgent:
         log.info("Final output: %s", result["messages"][-1].content)
         return result
     
-    def stream_(self, messages: list):
+    def stream_(self, messages: List[str]):
         for output in self.graph.stream(
             {"messages": messages,
              "user_input": messages[-1]}):
             for key, value in output.items():
                 print(key, "----", value)
 
-    async def astream(self, messages: list):
+    async def astream(self, messages: List[str]):
         """Yield text chunks from the final agent response."""
         async for event in self.graph.astream_events(
             {"messages": messages}, version="v2"
