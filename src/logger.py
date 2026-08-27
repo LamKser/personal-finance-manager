@@ -2,8 +2,11 @@ import logging
 from os import getenv
 import os
 
-def logger(level: str = getenv("LOG_LEVEL", "INFO"),
-               file_name: str = getenv("LOG_FILE", "logs/app.log")):
+from src.settings import settings
+
+
+def logger(level: str = getenv("LOG_LEVEL", settings.log_level),
+               file_name: str = getenv("LOG_FILE", settings.log_file)):
     
     parent_dir = os.path.dirname(file_name)
     if not os.path.exists(parent_dir):
