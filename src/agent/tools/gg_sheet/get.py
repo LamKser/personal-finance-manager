@@ -9,25 +9,28 @@ from src.agent.tools.gg_sheet.utils import fill_date, filter_transaction
 RANGE = "A:E"
 
 
-# TODO: 
-# - Add filter amount: float=None, transaction_type: str=None, payment_method: str=None, from_date: str=None, to_date: str=None
-# - Move spreadsheet to outside
 @tool
 def get_transaction(sheet_name: str,
-                    from_date: str=None, to_date: str=None,
-                    from_amount: float=None, to_amount: float=None,
-                    transaction_type: str=None, description: str=None, payment_method: str=None
+                    from_date: str = None, to_date: str = None,
+                    from_amount: float = None, to_amount: float = None,
+                    transaction_type: str = None, description: str = None, payment_method: str = None
                     ) -> List[List[str]]:
-    """Retrieve all transaction records from a worksheet.
+    """Retrieve transaction records from a worksheet with optional filtering.
 
-    Fetches the cell values for the transaction details from the specified worksheet and returns them as a list of rows.
+    Fetches the cell values for the transaction details from the specified worksheet, applies filters based on the provided criteria and returns them as a list of rows.
 
     Args:
-        sheet_name (str): Title of the worksheet to read transactions from. Must be either "Tổng hợp" (the summary sheet) or "Tháng X", where X is the month number (e.g., "Tháng 1" through "Tháng 12").
+        sheet_name (str): Title of the worksheet to read transactions from. Must be either "Tổng hợp" (summary) or "Tháng X", where X is the month number (1-12).
+        from_date (str, optional): Start date for filtering in 'DD-MM-YYYY' format.
+        to_date (str, optional): End date for filtering in 'DD-MM-YYYY' format.
+        from_amount (float, optional): Minimum transaction amount.
+        to_amount (float, optional): Maximum transaction amount.
+        transaction_type (str, optional): Type of transaction ("Nhận" or "Chi").
+        description (str, optional): Partial description to match.
+        payment_method (str, optional): Payment method used ("Thẻ" - made by online payment, card or other digital method, or "Tiền mặt" - made by cash).
 
     Returns:
-        A list of rows, where each row is a list of string cell values.
-        The first row typically contains the header labels.
+        List[List[str]]: A list of rows, where each row is a list of string cell values. The first row typically contains the header labels.
     """
     all_transaction = client.worksheet(title=sheet_name).get_all_values(range_name=RANGE)
     all_transaction = fill_date(all_transaction)
@@ -75,24 +78,31 @@ def get_all_transactions() -> Dict[str, List[List[str]]]:
 
 @tool
 def count_transaction(sheet_name: str,
-                      from_date: str=None, to_date: str=None,
-                      from_amount: float=None, to_amount: float=None,
-                      transaction_type: str=None, description: str=None, payment_method: str=None) -> int:
-    """Count the number of transaction records in a worksheet.
+                      from_date: str = None, to_date: str = None,
+                      from_amount: float = None, to_amount: float = None,
+                      transaction_type: str = None, description: str = None, payment_method: str = None) -> int:
+    """Count the number of transaction records in a worksheet with optional filtering.
 
-    Reads the transaction rows from the specified worksheet and returns the total number of records, excluding the header row.
+    Reads the transaction rows from the specified worksheet, applies filters based on the provided criteria, and returns the total number of matching records.
 
     Args:
-        sheet_name (str): Title of the worksheet to count transactions from. Must be either "Tổng hợp" (the summary sheet) or "Tháng X", where X is the month number (e.g., "Tháng 1" through "Tháng 12").
+        sheet_name (str): Title of the worksheet to read transactions from. Must be either "Tổng hợp" (summary) or "Tháng X", where X is the month number (1-12).
+        from_date (str, optional): Start date for filtering in 'DD-MM-YYYY' format.
+        to_date (str, optional): End date for filtering in 'DD-MM-YYYY' format.
+        from_amount (float, optional): Minimum transaction amount.
+        to_amount (float, optional): Maximum transaction amount.
+        transaction_type (str, optional): Type of transaction ("Nhận" or "Chi").
+        description (str, optional): Partial description to match.
+        payment_method (str, optional): Payment method used ("Thẻ" - made by online payment, card or other digital method, or "Tiền mặt" - made by cash).
 
     Returns:
-        The number of transaction records in the worksheet (excluding the header row).
+        int: The number of transaction records matching the criteria.
     """
     all_transaction = client.worksheet(title=sheet_name).get_all_values(range_name=RANGE)
     all_transaction = fill_date(all_transaction)
     filtered_transaction = filter_transaction(all_transaction, from_date, to_date, from_amount, to_amount, transaction_type, description, payment_method)
     del all_transaction
-    return len(filtered_transaction[1:])
+    return len(filtered_transaction[1:]) # Skip header row
 
 
 @tool
