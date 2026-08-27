@@ -4,7 +4,7 @@ from datetime import datetime
 
 
 OLD_DATE_FORMAT = "%a, %d-%m-%Y" # Ex: Mon, 17-08-2026
-NEW_DATE_FORMAT = "%Y-%m-%d" # Ex: 2026-08-17
+NEW_DATE_FORMAT = "%d-%m-%Y" # Ex: 17-08-2026
 
 
 def filter_transaction(transaction: List[List[str]],
