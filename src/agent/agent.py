@@ -21,8 +21,8 @@ log = getLogger(__name__)
 
 class LangGraphAgent:
     def __init__(self):
-        self.tools = get_tools() # TODO: implement tools
-        self.llm = OllamaModel(settings.model, settings.reasoning).get_llm()
+        self.tools = get_tools()
+        self.llm = OllamaModel(settings.llm_model, settings.reasoning).get_llm()
         
         self.graph = self.build_graph()
         log.info("Successfully build graph")
