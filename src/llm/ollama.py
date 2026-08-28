@@ -8,7 +8,7 @@ log = getLogger(__name__)
 class OllamaModel:
     def __init__(self, model_name: str, reasoning: bool | str | None = None):
         self.llm = ChatOllama(model=model_name, reasoning=reasoning)
-        log.info(f"Using Provider: 'Ollama' - Model: '{model_name}' - think_mode: '{reasoning}'")
+        log.info(f"[LLM] Using Provider: 'Ollama' - Model: '{model_name}' - think_mode: '{reasoning}'")
         
     def get_llm(self):
         return self.llm
