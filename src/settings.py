@@ -14,11 +14,16 @@ class Settings(BaseSettings):
     telegram_token: str
 
     # Agent
-    provider: str
+    llm_provider: str
     api_key: str
-    model: str
+    llm_model: str
     reasoning: str
     max_tool_retry: int
+
+    # Embedding
+    embedding_provider: str
+    embedding_model: str
+    dimension: int
 
     # GG sheet
     credential: str
