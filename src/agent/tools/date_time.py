@@ -3,7 +3,7 @@ from datetime import date, timedelta
 
 def get_today_datetime():
     '''Get date of current day'''
-    return str(date.today())
+    return str(date.today().strftime("%a, %d-%m-%Y"))
 
 def get_yesterday_datetime():
     '''Get yesterday date'''
