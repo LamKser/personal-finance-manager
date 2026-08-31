@@ -11,9 +11,11 @@ from src.llm import OllamaModel
 from src.agent.state import State
 from src.utils.visualization .graph_visualize import GraphVisualization
 from src.settings import settings
+from src.prompt.system import SYSTEM_PROMPT
 
 # Tools
 from src.agent.tools.gg_sheet import get_tools
+from src.agent.tools.date_time import get_today_datetime
 
 
 log = getLogger(__name__)
@@ -47,6 +49,7 @@ class LangGraphAgent:
 
     def invoke_graph(self, messages: list):
         log.info("Prompt: %s", messages)
+        messages = [{"role": "system", "content": SYSTEM_PROMPT.format(CURRENT_DATE=get_today_datetime())}] + messages
         result = self.graph.invoke(
             {"messages": messages,
              "user_input": messages[-1],
