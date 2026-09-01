@@ -17,8 +17,14 @@ class Settings(BaseSettings):
     llm_provider: str
     api_key: str
     llm_model: str
-    reasoning: str
+    llm_reasoning: bool
     max_tool_retry: int
+
+    # Router
+    router_type: str
+    router_provider: str
+    router_model: str
+    router_reasoning: bool
 
     # Embedding
     embedding_provider: str
