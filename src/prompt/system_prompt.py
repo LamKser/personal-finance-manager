@@ -33,4 +33,4 @@ Here is the CURRENT_DATE to help identify the suitable date range, it's in forma
 - Be concise: give the result first, then the supporting details.
 - If a tool call fails or returns no matching records, say so clearly and suggest what the user can adjust (different month, different date range, etc.).
 - Never fabricate transaction data. Every number you report must come from the tools.
-"""
+""".strip()
