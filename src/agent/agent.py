@@ -40,7 +40,7 @@ class LangGraphAgent:
 
 
         self.graph = self.build_graph()
-        log.info("Successfully build graph")
+        log.info("[AGENT] Successfully build graph")
 
     def build_graph(self):
         graph = StateGraph(State)
@@ -50,18 +50,18 @@ class LangGraphAgent:
         graph.add_node("tools", ToolNode(self.tools))
         graph.add_node("check-tool-error", self.check_tool_error_node)
         graph.add_node("llm", self.llm_invoke)
-        log.info("Finished adding nodes")
+        log.info("[NODE] Finished adding nodes")
 
         # Add edges
         graph.add_edge(START, "router")
         graph.add_edge("llm-bind-tool", "tools")
         graph.add_edge("tools", "check-tool-error")
         graph.add_edge("llm", END)
-        log.info("Finished adding edges")
+        log.info("[EDGE] Finished adding edges")
         return graph.compile()
 
     def invoke_graph(self, messages: list):
-        log.info("Prompt: %s", messages)
+        log.info("[USER] Prompt: %s", messages)
         messages = [{"role": "system", "content": SYSTEM_PROMPT.format(CURRENT_DATE=get_today_datetime())}] + messages
         result = self.graph.invoke(
             {"messages": messages,
@@ -71,7 +71,7 @@ class LangGraphAgent:
              "total_token_llm": 0,
              "total_token": 0
              })
-        log.info("Final output: %s", result["messages"][-1].content)
+        log.info("[AGENT] Response: %s", result["messages"][-1].content)
         return result
     
     def stream_(self, messages: List[str]):
@@ -119,10 +119,10 @@ class LangGraphAgent:
     def router_node(self, state: State) -> Command[Literal["llm-bind-tool", "llm"]]:
         use_tool = self.router.route(state["user_input"])
         if use_tool:
-            log.info("[NODE router_node]: Route to `llm-bind-tool`")
+            log.info("[NODE router]: Route to `llm-bind-tool`")
             return Command(goto="llm-bind-tool")
         
-        log.info("[NODE router_node]: Route to `llm`")
+        log.info("[NODE router]: Route to `llm`")
         return Command(goto="llm")
 
     def check_tool_error_node(self, state: State) -> Command[Literal["llm-bind-tool", "llm"]]:
