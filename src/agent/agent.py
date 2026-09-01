@@ -7,11 +7,12 @@ from langgraph.prebuilt import ToolNode
 from langgraph.types import Command
 from langchain_core.messages import ToolMessage
 
-from src.llm import OllamaModel
+from src.llm import LLM
+from src.router import LLMRouter, BasicRouter
 from src.agent.state import State
 from src.utils.visualization .graph_visualize import GraphVisualization
 from src.settings import settings
-from src.prompt.system import SYSTEM_PROMPT
+from src.prompt import SYSTEM_PROMPT
 
 # Tools
 from src.agent.tools.gg_sheet import get_tools
@@ -24,15 +25,27 @@ log = getLogger(__name__)
 class LangGraphAgent:
     def __init__(self):
         self.tools = get_tools()
-        self.llm = OllamaModel(settings.llm_model, settings.reasoning).get_llm()
+        self.llm = LLM(settings.llm_provider, settings.llm_model, settings.llm_reasoning).get_llm()
+        log.info(f"[LLM] Using Provider: '{settings.llm_provider.upper()}' - Model: '{settings.llm_model}' - think_mode: '{settings.llm_reasoning}'")
         
+        if settings.router_type == "llm":
+            self.router = LLMRouter(settings.router_provider,
+                                    settings.router_model,
+                                    settings.router_reasoning)
+            log.info(f"[ROUTER] Using Router: '{settings.router_type}' - Provider: '{settings.router_provider.upper()}' - Model: '{settings.router_model}' - think_mode: '{settings.router_reasoning}'")
+
+        elif settings.router_type == "basic":
+            self.router = BasicRouter()
+            log.info(f"[ROUTER] Using Router: '{settings.router_type}'")
+
+
         self.graph = self.build_graph()
         log.info("Successfully build graph")
 
     def build_graph(self):
         graph = StateGraph(State)
         # Add nodes
-        graph.add_node("router", self.router)
+        graph.add_node("router", self.router_node)
         graph.add_node("llm-bind-tool", self.agent_bind_tool)
         graph.add_node("tools", ToolNode(self.tools))
         graph.add_node("check-tool-error", self.check_tool_error_node)
@@ -103,13 +116,13 @@ class LangGraphAgent:
             "total_token": bind_tool_response.usage_metadata["total_tokens"]
         } 
 
-    def router(self, state: State) -> Command[Literal["llm-bind-tool", "llm"]]:
-        # TODO: Add embedding method to retrieve tool
-        if "tool" in state["user_input"]:
-            log.info("[NODE router]: Route to `llm-bind-tool`")
+    def router_node(self, state: State) -> Command[Literal["llm-bind-tool", "llm"]]:
+        use_tool = self.router.route(state["user_input"])
+        if use_tool:
+            log.info("[NODE router_node]: Route to `llm-bind-tool`")
             return Command(goto="llm-bind-tool")
         
-        log.info("[NODE router]: Route to `llm`")
+        log.info("[NODE router_node]: Route to `llm`")
         return Command(goto="llm")
 
     def check_tool_error_node(self, state: State) -> Command[Literal["llm-bind-tool", "llm"]]:
@@ -138,9 +151,4 @@ class LangGraphAgent:
         log.info("[NODE check-tool-error] Tool succeeded, routing to `llm`")
         return Command(goto="llm")
 
-
     # ------------------------------ Edges ------------------------------
-
-    # ------------------------------ Visualization ------------------------------
-    def visualize_graph(self):
-        return GraphVisualization().visualize_png(self.graph)
