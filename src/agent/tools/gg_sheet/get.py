@@ -35,28 +35,35 @@ def get_transaction(sheet_name: str,
     all_transaction = client.worksheet(title=sheet_name).get_all_values(range_name=RANGE)
     all_transaction = fill_date(all_transaction)
     filtered_transaction = filter_transaction(all_transaction, from_date, to_date, from_amount, to_amount, transaction_type, description, payment_method)
-    del all_transaction
     return filtered_transaction
 
 
 @tool
-def get_transaction_multi_sheet(sheet_names: List[str]) -> Dict[str, List[List[str]]]:
+def get_transaction_multi_sheet(sheet_names: List[str],
+                                from_amount: float = None, to_amount: float = None,
+                                transaction_type: str = None, description: str = None, payment_method: str = None
+                                ) -> Dict[str, List[List[str]]]:
     """Retrieve all transaction records from multiple worksheets at once.
 
     Fetches the cell values for the transaction details from each specified worksheet and returns them in a single mapping.
 
     Args:
         sheet_names (List[str]): Titles of the worksheets to read transactions from. Each entry must be either "Tổng hợp" (the summary sheet) or "Tháng X", where X is the month number (e.g., "Tháng 1" through "Tháng 12").
-
+        from_amount (float, optional): Minimum transaction amount.
+        to_amount (float, optional): Maximum transaction amount.
+        transaction_type (str, optional): Type of transaction ("Nhận" or "Chi").
+        description (str, optional): Partial description to match.
+        payment_method (str, optional): Payment method used ("Thẻ" - made by online payment, card or other digital method, or "Tiền mặt" - made by cash).
     Returns:
-        A dictionary mapping each worksheet title to its rows,
-        where each row is a list of string cell values.
-        The first row of each worksheet typically contains the header labels.
+        Dict[str, List[List[str]]]: A dictionary mapping each worksheet title to its rows, where each row is a list of string cell values. The first row of each worksheet typically contains the header labels.
     """
-    return {
-        name: client.worksheet(title=name).get_all_values(range_name=RANGE)
-        for name in sheet_names
-    }
+    result = dict()
+    for name in sheet_names:
+        all_transaction = client.worksheet(title=name).get_all_values(range_name=RANGE)
+        all_transaction = fill_date(all_transaction)
+        filtered_transaction = filter_transaction(all_transaction, None, None, from_amount, to_amount, transaction_type, description, payment_method)
+        result[name] = filtered_transaction
+    return result
 
 
 @tool
@@ -70,6 +77,8 @@ def get_all_transactions() -> Dict[str, List[List[str]]]:
         where each row is a list of string cell values.
         The first row of each worksheet typically contains the header labels.
     """
+    all_worksheets = client.worksheets()
+    
     return {
         worksheet.title: worksheet.get_all_values(range_name=RANGE)
         for worksheet in client.worksheets()
@@ -101,7 +110,6 @@ def count_transaction(sheet_name: str,
     all_transaction = client.worksheet(title=sheet_name).get_all_values(range_name=RANGE)
     all_transaction = fill_date(all_transaction)
     filtered_transaction = filter_transaction(all_transaction, from_date, to_date, from_amount, to_amount, transaction_type, description, payment_method)
-    del all_transaction
     return len(filtered_transaction[1:]) # Skip header row
 
 
