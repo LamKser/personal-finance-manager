@@ -27,15 +27,15 @@ class LangGraphAgent:
         self.llm = LLM(settings.llm_provider, settings.llm_model, settings.llm_reasoning).get_llm()
         log.info(f"[LLM] Using Provider: '{settings.llm_provider.upper()}' - Model: '{settings.llm_model}' - think_mode: '{settings.llm_reasoning}'")
         
-        if settings.router_type == "llm":
-            self.router = LLMRouter(settings.router_provider,
-                                    settings.router_model,
-                                    settings.router_reasoning)
-            log.info(f"[ROUTER] Using Router: '{settings.router_type}' - Provider: '{settings.router_provider.upper()}' - Model: '{settings.router_model}' - think_mode: '{settings.router_reasoning}'")
+        # if settings.router_type == "llm":
+        #     self.router = LLMRouter(settings.router_provider,
+        #                             settings.router_model,
+        #                             settings.router_reasoning)
+        #     log.info(f"[ROUTER] Using Router: '{settings.router_type}' - Provider: '{settings.router_provider.upper()}' - Model: '{settings.router_model}' - think_mode: '{settings.router_reasoning}'")
 
-        elif settings.router_type == "basic":
-            self.router = BasicRouter()
-            log.info(f"[ROUTER] Using Router: '{settings.router_type}'")
+        # elif settings.router_type == "basic":
+        #     self.router = BasicRouter()
+        #     log.info(f"[ROUTER] Using Router: '{settings.router_type}'")
 
 
         self.graph = self.build_graph()
@@ -111,7 +111,6 @@ class LangGraphAgent:
         log.info("[NODE llm-bind-tool]: %r", bind_tool_response)
         if not bind_tool_response.tool_calls:
             log.info("[NODE llm-bind-tool]: No tool(s) available - Route to `llm`")
-        #     return Command(goto="llm")
         
         return {
             "messages": [bind_tool_response],
