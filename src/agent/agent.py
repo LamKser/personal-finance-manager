@@ -10,7 +10,6 @@ from langchain_core.messages import ToolMessage
 from src.llm import LLM
 from src.router import LLMRouter, BasicRouter
 from src.agent.state import State
-from src.utils.visualization .graph_visualize import GraphVisualization
 from src.settings import settings
 from src.prompt import SYSTEM_PROMPT
 
@@ -45,7 +44,7 @@ class LangGraphAgent:
     def build_graph(self):
         graph = StateGraph(State)
         # Add nodes
-        graph.add_node("router", self.router_node)
+        # graph.add_node("router", self.router_node)
         graph.add_node("llm-bind-tool", self.agent_bind_tool)
         graph.add_node("tools", ToolNode(self.tools))
         graph.add_node("check-tool-error", self.check_tool_error_node)
@@ -53,7 +52,8 @@ class LangGraphAgent:
         log.info("[NODE] Finished adding nodes")
 
         # Add edges
-        graph.add_edge(START, "router")
+        # graph.add_edge(START, "router")
+        graph.add_edge(START, "llm-bind-tool")
         graph.add_edge("llm-bind-tool", "tools")
         graph.add_edge("tools", "check-tool-error")
         graph.add_edge("llm", END)
@@ -109,21 +109,24 @@ class LangGraphAgent:
         llm_with_tools = self.llm.bind_tools(self.tools) # TODO: add tool_retrieve from state, current is example
         bind_tool_response = llm_with_tools.invoke(state["messages"])
         log.info("[NODE llm-bind-tool]: %r", bind_tool_response)
-
+        if not bind_tool_response.tool_calls:
+            log.info("[NODE llm-bind-tool]: No tool(s) available - Route to `llm`")
+        #     return Command(goto="llm")
+        
         return {
             "messages": [bind_tool_response],
             "total_token_tool_call": bind_tool_response.usage_metadata["total_tokens"],
             "total_token": bind_tool_response.usage_metadata["total_tokens"]
         } 
 
-    def router_node(self, state: State) -> Command[Literal["llm-bind-tool", "llm"]]:
-        use_tool = self.router.route(state["user_input"])
-        if use_tool:
-            log.info("[NODE router]: Route to `llm-bind-tool`")
-            return Command(goto="llm-bind-tool")
+    # def router_node(self, state: State) -> Command[Literal["llm-bind-tool", "llm"]]:
+    #     use_tool = self.router.route(state["user_input"])
+    #     if use_tool:
+    #         log.info("[NODE router]: Route to `llm-bind-tool`")
+    #         return Command(goto="llm-bind-tool")
         
-        log.info("[NODE router]: Route to `llm`")
-        return Command(goto="llm")
+    #     log.info("[NODE router]: Route to `llm`")
+    #     return Command(goto="llm")
 
     def check_tool_error_node(self, state: State) -> Command[Literal["llm-bind-tool", "llm"]]:
         last_message = state["messages"][-1]
