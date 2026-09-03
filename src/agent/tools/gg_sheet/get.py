@@ -121,7 +121,7 @@ def count_transaction(sheet_name: str,
     all_transaction = client.worksheet(title=sheet_name).get_all_values(range_name=RANGE)
     all_transaction = fill_date(all_transaction)
     filtered_transaction = filter_transaction(all_transaction, from_date, to_date, from_amount, to_amount, transaction_type, description, payment_method)
-    return len(filtered_transaction[1:]) # Skip header row
+    return len(filtered_transaction) - 1 # Skip header row
 
 
 @tool
@@ -149,7 +149,7 @@ def count_transaction_multi_sheet(sheet_names: List[str],
         all_transaction = client.worksheet(title=name).get_all_values(range_name=RANGE)
         all_transaction = fill_date(all_transaction)
         filtered_transaction = filter_transaction(all_transaction, None, None, from_amount, to_amount, transaction_type, description, payment_method)
-        result[name] = len(filtered_transaction)
+        result[name] = len(filtered_transaction) - 1 # Skip header row
     return result
 
 
@@ -179,5 +179,5 @@ def count_all_transactions(from_amount: float = None, to_amount: float = None,
         all_transaction = worksheet.get_all_values(range_name=RANGE)
         all_transaction = fill_date(all_transaction)
         filtered_transaction = filter_transaction(all_transaction, None, None, from_amount, to_amount, transaction_type, description, payment_method)
-        result[worksheet.title] = len(filtered_transaction)
+        result[worksheet.title] = len(filtered_transaction) - 1 # Skip header row
     return result
