@@ -3,13 +3,20 @@ from logging import getLogger
 
 from langchain_ollama import OllamaEmbeddings
 
+
+DEFAULT_DIMENSION = {
+    "nomic-embed-text-v2-moe:latest": 768,
+    "qwen3-embedding:0.6b": 1024
+}
+
+
 log = getLogger(__name__)
 
 
 class OllamaEmbedding:
-    def __init__(self, model_name: str, dimension: int = 256):
-        self.embedding_model = OllamaEmbeddings(model=model_name, dimensions=dimension)
-        log.info(f"[Embedding] Using Provider: 'Ollama' - Model: '{model_name}' - dimension: '{dimension}'")
+    def __init__(self, model: str, dimension: int = None):
+        self.embedding_model = OllamaEmbeddings(model=model, dimensions=dimension if dimension else DEFAULT_DIMENSION[model])
+        log.info(f"[EMBEDDING] Using Provider: 'Ollama' - Model: '{model}' - dimension: '{dimension}'")
         
     def get_embedding(self, text: str) -> List[float]:
         return self.embedding_model.embed_query(text)
