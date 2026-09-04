@@ -13,7 +13,7 @@ log = getLogger(__name__)
 class ToolKnowledgeBase:
     def __init__(self, provider: str, model: str, dimension: int) -> None:
         self.model = EmbeddingModel(provider, model, dimension)
-        log.info(f"[ToolKnowledgeBase] Using provider: '{provider.upper()}' - Model: '{model}' - dimension: '{dimension}")
+        log.info("[ToolKnowledgeBase] Using Provider: '%s' - Model: '%s' - dimension: %d", provider, model, self.model.dimension)
         self.tools = {
             tool.name: tool.description
             for tool in get_tools()
@@ -23,12 +23,12 @@ class ToolKnowledgeBase:
         path = Path(json_path)
 
         if path.exists():
-            log.info(f"[ToolKnowledgeBase] Path '{json_path}' exists")
+            log.info("[ToolKnowledgeBase] Path '%s' exists", json_path)
             return
 
         path.parent.mkdir(parents=True, exist_ok=True)
 
-        log.info(f"[ToolKnowledgeBase] Creating knowledge base for tool")
+        log.info("[ToolKnowledgeBase] Creating knowledge base for tool")
         with path.open("w", encoding="utf-8") as f:
             f.write("[\n")
             for i, (name, description) in enumerate(self.tools.items(), start=1):
@@ -43,9 +43,9 @@ class ToolKnowledgeBase:
                 f.write(
                     json.dumps(record, ensure_ascii=False) + ("\n" if i == len(self.tools) else ",\n")
                 )
-                log.info(f"[ToolKnowledgeBase] Creating for tool '{name}'")
+                log.info("[ToolKnowledgeBase] Creating for tool '%s'", name)
                 f.flush()
             f.write("]\n")
-        log.info(f"[ToolKnowledgeBase] Created knowledge base for tool")
+        log.info("[ToolKnowledgeBase] Created knowledge base for tool")
         return
     

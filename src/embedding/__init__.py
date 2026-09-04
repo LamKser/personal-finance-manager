@@ -1,19 +1,19 @@
 from logging import getLogger
 
-from src.embedding.ollama import OllamaEmbedding
-
-
 log = getLogger(__name__)
+
+from src.embedding.ollama import OllamaEmbedding
 
 
 class EmbeddingModel:
     def __init__(self, provider: str, model: str, dimension: int = None) -> None:
+        self.provider = provider
+        self.model = model
+        self.dimension = dimension
         if provider == "ollama":
             self.model = OllamaEmbedding(model, dimension)
         else:
-            log.info("[EMBEDDING] Provider '{provider}' is not supported")
-
-        log.info(f"[EMBEDDING] Using Provider: '{provider.upper()}' - Model: '{model}' - dimension: '{dimension}'")
+            log.info("[EMBEDDING] Provider '%s' is not supported", provider)
 
     def get_embedding(self, query):
         return self.model.get_embedding(query)

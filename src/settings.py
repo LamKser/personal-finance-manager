@@ -1,4 +1,5 @@
 from os import getenv
+from typing import Optional
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -32,7 +33,7 @@ class Settings(BaseSettings):
     # Embedding
     embedding_provider: str
     embedding_model: str
-    dimension: int
+    dimension: int | str | None = None
 
     # GG sheet
     credential: str

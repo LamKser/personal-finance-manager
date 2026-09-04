@@ -26,7 +26,7 @@ class LangGraphAgent:
     def __init__(self):
         self.tools = get_tools()
         self.llm = LLM(settings.llm_provider, settings.llm_model, settings.llm_reasoning).get_llm()
-        log.info(f"[LLM] Using Provider: '{settings.llm_provider.upper()}' - Model: '{settings.llm_model}' - think_mode: '{settings.llm_reasoning}'")
+        log.info("[LLM] Using Provider: '%s' - Model: '%s' - think_mode: '%s'", settings.llm_provider, settings.llm_model, settings.llm_reasoning)
 
         self.tool_kb = ToolKnowledgeBase(settings.embedding_provider,
                                          settings.embedding_model,
@@ -38,8 +38,6 @@ class LangGraphAgent:
                                          settings.embedding_model,
                                          settings.dimension,
                                          settings.tool_kb)
-            log.info(f"[ROUTER] Using Router: '{settings.router_type}' - Provider: '{settings.embedding_provider.upper()}' - Model: '{settings.embedding_model}' - dimension: '{settings.dimension}'")
-
 
         self.graph = self.build_graph()
         log.info("[AGENT] Successfully build graph")

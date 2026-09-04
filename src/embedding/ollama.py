@@ -15,8 +15,8 @@ log = getLogger(__name__)
 
 class OllamaEmbedding:
     def __init__(self, model: str, dimension: int = None):
-        self.embedding_model = OllamaEmbeddings(model=model, dimensions=dimension if dimension else DEFAULT_DIMENSION[model])
-        log.info(f"[EMBEDDING] Using Provider: 'Ollama' - Model: '{model}' - dimension: '{dimension}'")
+        self.dimension = dimension if dimension else DEFAULT_DIMENSION[model]
+        self.embedding_model = OllamaEmbeddings(model=model, dimensions=self.dimension)
         
     def get_embedding(self, text: str) -> List[float]:
         return self.embedding_model.embed_query(text)
