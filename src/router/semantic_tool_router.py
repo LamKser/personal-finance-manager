@@ -12,7 +12,7 @@ from src.tools.gg_sheet import get_tools
 class SemanticToolRouter:
     def __init__(self, provider: str, model: str, dimension: int, kb_path: str):
         self.model = EmbeddingModel(provider, model, dimension)
-        log.info("[SemanticToolRouter] Using Provider: '%d' - Model: '%s' - dimension: %d", provider, model, self.model.dimension)
+        log.info("[SemanticToolRouter] Using Provider: '%s' - Model: '%s' - dimension: %d", provider, model, self.model.dimension)
         self.map_all_tools = dict()
         for tool in get_tools():
             self.map_all_tools[tool.name] = tool
