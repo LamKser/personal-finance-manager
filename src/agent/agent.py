@@ -8,13 +8,15 @@ from langgraph.types import Command
 from langchain_core.messages import ToolMessage
 
 from src.llm import LLM
+from src.router import SemanticToolRouter
+from src.knowledge_base import ToolKnowledgeBase
 from src.agent.state import State
 from src.settings import settings
 from src.prompt import SYSTEM_PROMPT
 
 # Tools
-from src.agent.tools.gg_sheet import get_tools
-from src.agent.tools.date_time import get_today_datetime
+from src.tools.gg_sheet import get_tools
+from src.tools.date_time import get_today_datetime
 
 
 log = getLogger(__name__)
@@ -25,16 +27,18 @@ class LangGraphAgent:
         self.tools = get_tools()
         self.llm = LLM(settings.llm_provider, settings.llm_model, settings.llm_reasoning).get_llm()
         log.info(f"[LLM] Using Provider: '{settings.llm_provider.upper()}' - Model: '{settings.llm_model}' - think_mode: '{settings.llm_reasoning}'")
-        
-        # if settings.router_type == "llm":
-        #     self.router = LLMRouter(settings.router_provider,
-        #                             settings.router_model,
-        #                             settings.router_reasoning)
-        #     log.info(f"[ROUTER] Using Router: '{settings.router_type}' - Provider: '{settings.router_provider.upper()}' - Model: '{settings.router_model}' - think_mode: '{settings.router_reasoning}'")
 
-        # elif settings.router_type == "basic":
-        #     self.router = BasicRouter()
-        #     log.info(f"[ROUTER] Using Router: '{settings.router_type}'")
+        self.tool_kb = ToolKnowledgeBase(settings.embedding_provider,
+                                         settings.embedding_model,
+                                         settings.dimension
+                                        ).create_json_kb(settings.tool_kb)
+
+        if settings.router_type == "semantic":
+            self.router = SemanticToolRouter(settings.embedding_provider,
+                                         settings.embedding_model,
+                                         settings.dimension,
+                                         settings.tool_kb)
+            log.info(f"[ROUTER] Using Router: '{settings.router_type}' - Provider: '{settings.embedding_provider.upper()}' - Model: '{settings.embedding_model}' - dimension: '{settings.dimension}'")
 
 
         self.graph = self.build_graph()
@@ -43,7 +47,7 @@ class LangGraphAgent:
     def build_graph(self):
         graph = StateGraph(State)
         # Add nodes
-        # graph.add_node("router", self.router_node)
+        graph.add_node("router", self.router_node)
         graph.add_node("llm-bind-tool", self.agent_bind_tool)
         graph.add_node("tools", ToolNode(self.tools))
         graph.add_node("check-tool-error", self.check_tool_error_node)
@@ -51,8 +55,8 @@ class LangGraphAgent:
         log.info("[NODE] Finished adding nodes")
 
         # Add edges
-        # graph.add_edge(START, "router")
-        graph.add_edge(START, "llm-bind-tool")
+        graph.add_edge(START, "router")
+        # graph.add_edge(START, "llm-bind-tool")
         graph.add_edge("llm-bind-tool", "tools")
         graph.add_edge("tools", "check-tool-error")
         graph.add_edge("llm", END)
@@ -68,7 +72,8 @@ class LangGraphAgent:
              "total_retry_tool": 0,
              "total_token_tool_call": 0,
              "total_token_llm": 0,
-             "total_token": 0
+             "total_token": 0,
+             "tool_call": []
              })
         log.info("[AGENT] Response: %s", result["messages"][-1].content)
         return result
@@ -105,7 +110,7 @@ class LangGraphAgent:
         }
 
     def agent_bind_tool(self, state: State):
-        llm_with_tools = self.llm.bind_tools(self.tools) # TODO: add tool_retrieve from state, current is example
+        llm_with_tools = self.llm.bind_tools(state["tool_call"])
         bind_tool_response = llm_with_tools.invoke(state["messages"])
         log.info("[NODE llm-bind-tool]: %r", bind_tool_response)
         if not bind_tool_response.tool_calls:
@@ -117,14 +122,15 @@ class LangGraphAgent:
             "total_token": bind_tool_response.usage_metadata["total_tokens"]
         } 
 
-    # def router_node(self, state: State) -> Command[Literal["llm-bind-tool", "llm"]]:
-    #     use_tool = self.router.route(state["user_input"])
-    #     if use_tool:
-    #         log.info("[NODE router]: Route to `llm-bind-tool`")
-    #         return Command(goto="llm-bind-tool")
+    def router_node(self, state: State) -> Command[Literal["llm-bind-tool", "llm"]]:
+        tool_retrieve = self.router.retrieve(state["user_input"], settings.top_tool, settings.tool_threshold)
+        log.info("[NODE router]: Tool retrieve (%d tools): %r", len(tool_retrieve), [(tool["tool"].name, tool["score"]) for tool in tool_retrieve])
+        if tool_retrieve:
+            log.info("[NODE router]: Route to `llm-bind-tool`")
+            return Command(goto="llm-bind-tool", update={"tool_call": [tool["tool"] for tool in tool_retrieve]})
         
-    #     log.info("[NODE router]: Route to `llm`")
-    #     return Command(goto="llm")
+        log.info("[NODE router]: Route to `llm`")
+        return Command(goto="llm")
 
     def check_tool_error_node(self, state: State) -> Command[Literal["llm-bind-tool", "llm"]]:
         last_message = state["messages"][-1]
