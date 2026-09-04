@@ -2,9 +2,9 @@ from typing import List
 
 from langchain_core.tools import StructuredTool
 
-from src.agent.tools.gg_sheet import get
-from src.agent.tools.gg_sheet import update
-from src.agent.tools.gg_sheet import write
+from src.tools.gg_sheet import get
+from src.tools.gg_sheet import update
+from src.tools.gg_sheet import write
 
 
 

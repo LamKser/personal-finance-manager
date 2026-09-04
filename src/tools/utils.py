@@ -2,7 +2,7 @@ from typing import Dict
 
 from langchain_core.tools import tool
 
-from src.agent.tools.date_time import get_today_datetime
+from src.tools.date_time import get_today_datetime
 
 
 @tool

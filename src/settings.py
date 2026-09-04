@@ -25,7 +25,9 @@ class Settings(BaseSettings):
     router_provider: str
     router_model: str
     router_reasoning: bool
-    max_tool: int
+    top_tool: int
+    tool_threshold: float
+    tool_kb: str
 
     # Embedding
     embedding_provider: str

@@ -2,8 +2,8 @@ from typing import Dict, List
 
 from langchain_core.tools import tool
 
-from src.agent.tools.gg_sheet.client import client
-from src.agent.tools.gg_sheet.utils import fill_date, filter_transaction
+from src.tools.gg_sheet.client import client
+from src.tools.gg_sheet.utils import fill_date, filter_transaction
 
 
 RANGE = "A:E"
