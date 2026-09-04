@@ -1,21 +1,23 @@
-import yaml
-import os
+from src.logger import logger
+
 from dotenv import load_dotenv
 
 load_dotenv()
+logger()
 
-from telegram_bot import TelegramBot
 
+from src.agent import LangGraphAgent
+agent = LangGraphAgent()
 
-TELEGRAM_CONFIG_PATH = "src/config/telegram.yaml"
-LLM_CONFIG_PATH = "src/config/llm.yaml"
+# from IPython.display import Image, display
+# from src.utils.visualization.graph_visualize import GraphVisualization
+# display(Image(GraphVisualization().visualize_png(agent.graph)))
 
-with open(TELEGRAM_CONFIG_PATH, 'r') as f:
-    telegram_config = yaml.safe_load(f)
-    telegram_config["token"] = os.getenv("TELEGRAM_TOKEN")
-
-with open(LLM_CONFIG_PATH, 'r') as f:
-    llm_config = yaml.safe_load(f)
-
-telegram = TelegramBot(telegram_config, llm_config)
-telegram.run()
+history = [
+    # "tool Tối Thứ Ba mua cà phê ở Ministop, trả tiền mặt 18 nghìn."
+    # "(tool) Đếm số giao dịch của Tháng 2"
+    "Liệt kê giao dịch vào ngày 12 tháng 5 bằng chuyển khoản",
+    # "Đếm toàn bộ số lượng giao dịch"
+    # "Xin chào"
+]
+a = agent.invoke_graph(history)
