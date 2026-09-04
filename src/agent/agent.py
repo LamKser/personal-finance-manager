@@ -76,23 +76,23 @@ class LangGraphAgent:
         log.info("[AGENT] Response: %s", result["messages"][-1].content)
         return result
     
-    def stream_(self, messages: List[str]):
-        for output in self.graph.stream(
-            {"messages": messages,
-             "user_input": messages[-1]}):
-            for key, value in output.items():
-                print(key, "----", value)
+    # def stream_(self, messages: List[str]):
+    #     for output in self.graph.stream(
+    #         {"messages": messages,
+    #          "user_input": messages[-1]}):
+    #         for key, value in output.items():
+    #             print(key, "----", value)
 
-    async def astream(self, messages: List[str]):
-        """Yield text chunks from the final agent response."""
-        async for event in self.graph.astream_events(
-            {"messages": messages}, version="v2"
-        ):
-            if (event["event"] == "on_chat_model_stream") \
-                and (event["metadata"].get("langgraph_node") == "agent"):
-                chunk = event["data"]["chunk"]
-                if chunk.content:
-                    yield chunk.content
+    # async def astream(self, messages: List[str]):
+    #     """Yield text chunks from the final agent response."""
+    #     async for event in self.graph.astream_events(
+    #         {"messages": messages}, version="v2"
+    #     ):
+    #         if (event["event"] == "on_chat_model_stream") \
+    #             and (event["metadata"].get("langgraph_node") == "agent"):
+    #             chunk = event["data"]["chunk"]
+    #             if chunk.content:
+    #                 yield chunk.content
     
     # ============================== Build nodes ==============================
     # ------------------------------ Nodes ------------------------------
