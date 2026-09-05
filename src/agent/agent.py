@@ -90,7 +90,7 @@ class LangGraphAgent:
              "tool_call": []
              },
              config=self.callback)
-        log.info("[AGENT] Response: %s", result["messages"][-1].content)
+        log.info("[AGENT] Response: %r", result["messages"][-1].content)
         return result
     
     # def stream_(self, messages: List[str]):
@@ -154,7 +154,7 @@ class LangGraphAgent:
        
         log.info("[NODE check-tool-error] Checking tool status (retry=%d/%d)", retry_count, max_retries)
         if isinstance(last_message, ToolMessage):
-            log.info("[NODE tools] - %s", last_message)
+            log.info("[NODE tools] - %r", last_message)
 
         if isinstance(last_message, ToolMessage) and last_message.status == "error":
             log.error("[NODE check-tool-error] Tool failed: %r", last_message.content)
