@@ -24,6 +24,21 @@ log = getLogger(__name__)
 
 class LangGraphAgent:
     def __init__(self):
+        # Langfuse tracing
+        self.callback = None
+        if settings.tracing:
+            from langfuse import Langfuse, get_client
+            from langfuse.langchain import CallbackHandler
+
+            Langfuse(
+                public_key=settings.langfuse_public_key,
+                secret_key=settings.langfuse_secret_key,
+                host=settings.langfuse_base_url
+            )
+            self.langfuse = get_client()
+            self.callback = {"callbacks": [CallbackHandler()]}
+            log.info("[TRACING] Using Langfuse tracing")
+        
         self.tools = get_tools()
         self.llm = LLM(settings.llm_provider, settings.llm_model, settings.llm_reasoning).get_llm()
         log.info("[LLM] Using Provider: '%s' - Model: '%s' - think_mode: '%s'", settings.llm_provider, settings.llm_model, settings.llm_reasoning)
@@ -72,7 +87,8 @@ class LangGraphAgent:
              "total_token_llm": 0,
              "total_token": 0,
              "tool_call": []
-             })
+             },
+             config=self.callback)
         log.info("[AGENT] Response: %s", result["messages"][-1].content)
         return result
     

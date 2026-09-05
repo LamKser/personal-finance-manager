@@ -39,4 +39,10 @@ class Settings(BaseSettings):
     credential: str
     sheet_key: str
 
+    # Langfuse
+    tracing: bool
+    langfuse_secret_key: str
+    langfuse_public_key: str
+    langfuse_base_url: str
+
 settings = Settings()
