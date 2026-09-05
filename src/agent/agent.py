@@ -76,12 +76,13 @@ class LangGraphAgent:
         log.info("[EDGE] Finished adding edges")
         return graph.compile()
 
-    def invoke_graph(self, messages: list):
-        log.info("[USER] Prompt: %s", messages)
-        messages = [{"role": "system", "content": SYSTEM_PROMPT.format(CURRENT_DATE=get_today_datetime())}] + messages
+    def invoke_graph(self, query: str):
+        log.info("[USER] Prompt: %s", query)
+        messages = [{"role": "system", "content": SYSTEM_PROMPT.format(CURRENT_DATE=get_today_datetime())},
+                    {"role": "user", "content": query}]
         result = self.graph.invoke(
             {"messages": messages,
-             "user_input": messages[-1],
+             "user_input": messages[-1]["content"],
              "total_retry_tool": 0,
              "total_token_tool_call": 0,
              "total_token_llm": 0,
