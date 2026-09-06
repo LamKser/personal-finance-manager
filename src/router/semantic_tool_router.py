@@ -6,7 +6,7 @@ log = getLogger(__name__)
 import numpy as np
 
 from src.embedding import EmbeddingModel
-from src.tools.gg_sheet import get_tools
+from src.tools.gg_sheet import get_all_tools
 
 
 class SemanticToolRouter:
@@ -14,7 +14,7 @@ class SemanticToolRouter:
         self.model = EmbeddingModel(provider, model, dimension)
         log.info("[SemanticToolRouter] Using Provider: '%s' - Model: '%s' - dimension: %d", provider, model, self.model.dimension)
         self.map_all_tools = dict()
-        for tool in get_tools():
+        for tool in get_all_tools():
             self.map_all_tools[tool.name] = tool
 
         if "json" in kb_path:

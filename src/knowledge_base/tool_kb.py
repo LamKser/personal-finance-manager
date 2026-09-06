@@ -4,7 +4,7 @@ from logging import getLogger
 
 
 from src.embedding import EmbeddingModel
-from src.tools.gg_sheet import get_tools
+from src.tools.gg_sheet import get_all_tools
 
 
 log = getLogger(__name__)
@@ -16,7 +16,7 @@ class ToolKnowledgeBase:
         log.info("[ToolKnowledgeBase] Using Provider: '%s' - Model: '%s' - dimension: %d", provider, model, self.model.dimension)
         self.tools = {
             tool.name: tool.description
-            for tool in get_tools()
+            for tool in get_all_tools()
         }
 
     def create_json_kb(self, json_path: str = "data/tool_kb.json") -> None:
