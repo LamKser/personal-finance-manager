@@ -1,4 +1,7 @@
 from typing import Dict, List, Literal
+from logging import getLogger
+
+log = getLogger(__name__)
 
 from langchain_core.tools import tool
 
@@ -33,9 +36,11 @@ def get_transaction(sheet_name: str,
     Returns:
         List[List[str]]: A list of rows, where each row is a list of string cell values. The first row typically contains the header labels.
     """
+    log.info("[TOOL] Excute tool `get_transaction`")
     all_transaction = client.worksheet(title=sheet_name).get_all_values(range_name=RANGE)
     all_transaction = fill_date(all_transaction)
     filtered_transaction = filter_transaction(all_transaction, from_date, to_date, from_amount, to_amount, transaction_type, description, payment_method)
+    log.info("[TOOL-DONE] Excuted tool `get_transaction`")
     return filtered_transaction
 
 
@@ -60,12 +65,14 @@ def get_transaction_multi_sheet(sheet_names: List[str],
     Returns:
         Dict[str, List[List[str]]]: A dictionary mapping each worksheet title to its rows, where each row is a list of string cell values. The first row of each worksheet typically contains the header labels.
     """
+    log.info("[TOOL] Excute tool `get_transaction_multi_sheet`")
     result = dict()
     for name in sheet_names:
         all_transaction = client.worksheet(title=name).get_all_values(range_name=RANGE)
         all_transaction = fill_date(all_transaction)
         filtered_transaction = filter_transaction(all_transaction, None, None, from_amount, to_amount, transaction_type, description, payment_method)
         result[name] = filtered_transaction
+    log.info("[TOOL-DONE] Excuted tool `get_transaction_multi_sheet`")
     return result
 
 
@@ -88,6 +95,7 @@ def get_all_transactions(from_amount: float = None, to_amount: float = None,
     Returns:
         Dict[str, List[List[str]]]: A dictionary mapping each worksheet title to its rows, where each row is a list of string cell values.
     """
+    log.info("[TOOL] Excute tool `get_all_transactions`")
     all_worksheets = client.worksheets()
     result = dict()
     for worksheet in all_worksheets:
@@ -97,6 +105,7 @@ def get_all_transactions(from_amount: float = None, to_amount: float = None,
         all_transaction = fill_date(all_transaction)
         filtered_transaction = filter_transaction(all_transaction, None, None, from_amount, to_amount, transaction_type, description, payment_method)
         result[worksheet.title] = filtered_transaction
+    log.info("[TOOL-DONE] Excuted tool `get_all_transactions`")
     return result
 
 
@@ -123,9 +132,11 @@ def count_transaction(sheet_name: str,
     Returns:
         int: The number of transaction records matching the criteria.
     """
+    log.info("[TOOL] Excute tool `count_transaction`")
     all_transaction = client.worksheet(title=sheet_name).get_all_values(range_name=RANGE)
     all_transaction = fill_date(all_transaction)
     filtered_transaction = filter_transaction(all_transaction, from_date, to_date, from_amount, to_amount, transaction_type, description, payment_method)
+    log.info("[TOOL-DONE] Excuted tool `count_transaction`")
     return len(filtered_transaction) - 1 # Skip header row
 
 
@@ -150,12 +161,14 @@ def count_transaction_multi_sheet(sheet_names: List[str],
     Returns:
         Dict[str, int]: A dictionary mapping each worksheet title to its number of transaction records (excluding the header row).
     """
+    log.info("[TOOL] Excute tool `count_transaction_multi_sheet`")
     result = dict()
     for name in sheet_names:
         all_transaction = client.worksheet(title=name).get_all_values(range_name=RANGE)
         all_transaction = fill_date(all_transaction)
         filtered_transaction = filter_transaction(all_transaction, None, None, from_amount, to_amount, transaction_type, description, payment_method)
         result[name] = len(filtered_transaction) - 1 # Skip header row
+    log.info("[TOOL-DONE] Excuted tool `count_transaction_multi_sheet`")
     return result
 
 
@@ -178,6 +191,7 @@ def count_all_transactions(from_amount: float = None, to_amount: float = None,
     Returns:
         Dict[str, int]: A dictionary mapping each worksheet title to its number of transaction records (excluding the header row).
     """
+    log.info("[TOOL] Excute tool `count_all_transactions`")
     all_worksheets = client.worksheets()
     result = dict()
     for worksheet in all_worksheets:
@@ -187,4 +201,5 @@ def count_all_transactions(from_amount: float = None, to_amount: float = None,
         all_transaction = fill_date(all_transaction)
         filtered_transaction = filter_transaction(all_transaction, None, None, from_amount, to_amount, transaction_type, description, payment_method)
         result[worksheet.title] = len(filtered_transaction) - 1 # Skip header row
+    log.info("[TOOL-DONE] Excuted tool `count_all_transactions`")
     return result
