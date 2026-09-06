@@ -61,3 +61,14 @@ def fill_date(rows: List[List[str]]) -> List[List[str]]:
         last_date = row[0] or last_date
         row[0] = last_date
     return rows
+
+
+def has_empty_cell(values: List[str]) -> bool:
+    values.pop(3) # Remove column "Mô tả"
+    return all(value.strip() for value in values)
+
+
+def get_index_empty_cell(values: List[List[str]]) -> int:
+    for index, value in enumerate(values, start=1):
+        if not has_empty_cell(value): return index
+    return len(values) + 1 # add new record with new index
