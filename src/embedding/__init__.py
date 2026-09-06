@@ -6,7 +6,7 @@ from src.embedding.ollama import OllamaEmbedding
 
 OLLAMA_DEFAULT_DIMENSION = {
     "nomic-embed-text-v2-moe:latest": 768, # threshold router: 0.3
-    "qwen3-embedding:0.6b": 1024 # threshold router: 0.4
+    "qwen3-embedding:0.6b": 1024 # threshold router: 0.2
 }
 
 
