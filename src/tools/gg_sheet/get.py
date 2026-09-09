@@ -3,6 +3,7 @@ from logging import getLogger
 
 log = getLogger(__name__)
 
+import numpy as np
 from langchain_core.tools import tool
 
 from src.tools.gg_sheet.client import client
@@ -11,7 +12,7 @@ from src.tools.gg_sheet.utils import fill_date, filter_transaction
 
 RANGE = "A:E"
 
-
+# ================================ GET Action ================================
 @tool
 def get_transaction(sheet_name: str,
                     from_date: str = None, to_date: str = None,
@@ -109,6 +110,7 @@ def get_all_transactions(from_amount: float = None, to_amount: float = None,
     return result
 
 
+# ================================ COUNT Action ================================
 @tool
 def count_transaction(sheet_name: str,
                       from_date: str = None, to_date: str = None,
@@ -203,3 +205,76 @@ def count_all_transactions(from_amount: float = None, to_amount: float = None,
         result[worksheet.title] = len(filtered_transaction) - 1 # Skip header row
     log.info("[TOOL-DONE] Excuted tool `count_all_transactions`")
     return result
+
+
+@tool
+def count_distribution_transaction(sheet_name: str, by: str = Literal["date", "transaction_type", "payment_method"]) -> Dict[str, int]:
+    """Count transactions in a worksheet grouped by a specified field.
+
+    Args:
+        sheet_name: Title of the worksheet to read transactions from. Must be either "Tổng hợp" (summary) or "Tháng X", where X is the month number (1-12).
+        by: The field used to group transactions. Supported values are:
+            - 'date': Group transactions by date.
+            - 'transaction_type': Group transactions by transaction type.
+            - 'payment_method': Group transactions by payment method.
+    Returns: 
+        Dict[str, int]: A dictionary mapping each distinct value of the selected field to the number of transactions with that value.
+    """
+    log.info("[TOOL] Excute tool `count_distribution_transaction`")
+    distribution = dict()
+    all_transaction = client.worksheet(title=sheet_name).get_all_values(range_name=RANGE)
+    all_transaction = fill_date(all_transaction)
+    by_dict = {
+        "date": transaction[0],
+        "transaction_type": transaction[2],
+        "dapayment_methodte": transaction[4]
+    }
+    for transaction in all_transaction:
+        type_count = by_dict[by]
+        distribution[type_count] = distribution.get(type_count, 0) + 1
+
+    log.info("[TOOL-DONE] Excuted tool `count_distribution_transaction`")
+    return distribution
+
+
+@tool
+def count_distribution_transaction_multi_sheet(sheet_names: List[str], by: Literal["date", "transaction_type", "payment_method"]) -> Dict[str, int]:
+    """Count transactions of one or more worksheet grouped by a specified field.
+
+    Args:
+        sheet_names (List[str]): Titles of the worksheets to read transactions from. Each entry must be either "Tổng hợp" (the summary sheet) or "Tháng X", where X is the month number (e.g., "Tháng 1" through "Tháng 12").
+        by (Literal["date", "transaction_type", "payment_method"]): The field used to group transactions. Supported values are:
+            - 'date': Group transactions by date.
+            - 'transaction_type': Group transactions by transaction type.
+            - 'payment_method': Group transactions by payment method.
+    Returns: 
+        Dict[str, int]: A dictionary mapping each distinct value of the selected field to the number of transactions with that value.
+    """
+    log.info("[TOOL] Excute tool `count_distribution_transaction`")
+    distribution = dict()
+    by_dict = {
+        "date": transaction[0],
+        "transaction_type": transaction[2],
+        "dapayment_methodte": transaction[4]
+    }
+    for sheet in sheet_names:
+        distribution[sheet] = dict()
+        all_transaction = client.worksheet(title=sheet).get_all_values(range_name=RANGE)
+        all_transaction = fill_date(all_transaction)
+        
+        for transaction in all_transaction:
+            type_count = by_dict[by]
+            distribution[sheet][type_count] = distribution[sheet].get(type_count, 0) + 1
+
+    log.info("[TOOL-DONE] Excuted tool `count_distribution_transaction`")
+    return distribution
+
+
+@tool
+def count_total_amount(sheet_name: str):
+    pass
+
+
+@tool
+def count_total_amount_multi_sheet(sheet_names: List[str]):
+    pass
