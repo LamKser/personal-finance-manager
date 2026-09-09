@@ -6,7 +6,7 @@ log = getLogger(__name__)
 from langchain_core.tools import tool
 
 from src.tools.gg_sheet.client import client
-from src.tools.gg_sheet.utils import fill_date, get_index_empty_cell
+from src.tools.gg_sheet.utils import fill_date, has_empty_cell, get_index_empty_cell_by_date
 from src.tools.gg_sheet.cell_format import FORMAT_CURRENCY, FORMAT_DATE, transaction_condition_style, payment_condition_style
 
 
@@ -37,38 +37,37 @@ def add_new_transaction(sheet_name: str,
     worksheet = client.worksheet(title=sheet_name)
     all_transaction = worksheet.get_all_values(range_name=RANGE)
     all_transaction = fill_date(all_transaction)
-    index_empty_cell = get_index_empty_cell(all_transaction)
 
+    index_add_cell = get_index_empty_cell_by_date(all_transaction, date)
+    check_empty_row = has_empty_cell(all_transaction[index_add_cell])
+    index_add_cell += 1
+    if not check_empty_row:
+        worksheet.insert_row([], index=index_add_cell)
     worksheet.update(
         [[date, amount, transaction_type, description, payment_method]],
-        f"A{index_empty_cell}:E{index_empty_cell}",
+        f"A{index_add_cell}:E{index_add_cell}",
         raw=False
     )
+
     # Format date
-    worksheet.format(
-        f"A{index_empty_cell}",
-        {"numberFormat": FORMAT_DATE}
-    )
+    worksheet.format(f"A{index_add_cell}", {"numberFormat": FORMAT_DATE})
 
     # Format currency
-    worksheet.format(
-        f"B{index_empty_cell}",
-        {"numberFormat": FORMAT_CURRENCY}
-    )
+    worksheet.format(f"B{index_add_cell}", {"numberFormat": FORMAT_CURRENCY})
 
     # Format transaction type style - column C (3-4)
     client.batch_update({
         "requests": [
-            transaction_condition_style("Thu", worksheet.id, index_empty_cell-1, index_empty_cell, 2, 3),
-            transaction_condition_style("Chi", worksheet.id, index_empty_cell-1, index_empty_cell, 2, 3)
+            transaction_condition_style("Nhận", worksheet.id, index_add_cell-1, index_add_cell, 2, 3),
+            transaction_condition_style("Chi", worksheet.id, index_add_cell-1, index_add_cell, 2, 3)
         ]
     })
 
-    # Format payment method style - column E (4-5)
+    # # Format payment method style - column E (4-5)
     client.batch_update({
         "requests": [
-            payment_condition_style("Thẻ", worksheet.id, index_empty_cell-1, index_empty_cell, 4, 5),
-            payment_condition_style("Tiền mặt", worksheet.id, index_empty_cell-1, index_empty_cell, 4, 5)
+            payment_condition_style("Thẻ", worksheet.id, index_add_cell-1, index_add_cell, 4, 5),
+            payment_condition_style("Tiền mặt", worksheet.id, index_add_cell-1, index_add_cell, 4, 5)
         ]
     })
 

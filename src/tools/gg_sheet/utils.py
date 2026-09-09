@@ -65,10 +65,13 @@ def fill_date(rows: List[List[str]]) -> List[List[str]]:
 
 def has_empty_cell(values: List[str]) -> bool:
     values.pop(3) # Remove column "Mô tả"
-    return all(value.strip() for value in values)
+    return not all(value.strip() for value in values)
 
 
-def get_index_empty_cell(values: List[List[str]]) -> int:
-    for index, value in enumerate(values, start=1):
-        if not has_empty_cell(value): return index
-    return len(values) + 1 # add new record with new index
+def get_index_empty_cell_by_date(values: List[List[str]], date: str) -> int:
+    new_date = datetime.strptime(date, "%m-%d-%Y").strftime("%d-%m-%Y")
+    for index, value in enumerate(values, start=0):
+        if index == 0: continue
+        get_date = datetime.strptime(value[0], "%a, %d-%m-%Y").strftime("%d-%m-%Y")
+        if has_empty_cell(value) or (new_date < get_date): return index
+    return len(values) - 1

@@ -9,12 +9,12 @@ def transaction_condition_style(value: str, sheet_id: int,
                                 start_row_index: str, end_row_index: str,
                                 start_column_index: str, end_column_index: str) -> Dict:
     color = {
-        "Thu": {"red": 0, "green": 1, "blue": 0,},
+        "Nhận": {"red": 0, "green": 1, "blue": 0,},
         "Chi": {"red": 1, "green": 0, "blue": 0}
     }
 
     index = 0
-    if value == "Thu": index = 1
+    if value == "Nhận": index = 1
     style = {
         "addConditionalFormatRule": {
             "rule": {
