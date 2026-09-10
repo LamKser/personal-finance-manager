@@ -5,6 +5,7 @@ log = getLogger(__name__)
 
 from langchain_core.tools import tool
 
+from src.schema import ToolResult
 from src.tools.gg_sheet.client import client
 from src.tools.gg_sheet.utils import fill_date, has_empty_cell, get_index_empty_cell_by_date
 from src.tools.gg_sheet.cell_format import FORMAT_CURRENCY, FORMAT_DATE, transaction_condition_style, payment_condition_style
@@ -19,7 +20,7 @@ def add_new_transaction(sheet_name: str,
                     amount: float,
                     transaction_type: Literal["Chi", "Nhận"],
                     description: str,
-                    payment_method: Literal["Thẻ", "Tiền mặt"]) -> None:
+                    payment_method: Literal["Thẻ", "Tiền mặt"]) -> ToolResult:
     """Add a new transaction record to the specified worksheet.
 
     Args:
@@ -33,7 +34,7 @@ def add_new_transaction(sheet_name: str,
     Returns: 
         None: The transaction is added to the worksheet.
     """
-    log.info("[TOOL] Excute tool `add_new_transaction`")
+    log.debug("[TOOL-`add_new_transaction`] Execute tool")
     worksheet = client.worksheet(title=sheet_name)
     all_transaction = worksheet.get_all_values(range_name=RANGE)
     all_transaction = fill_date(all_transaction)
@@ -48,7 +49,7 @@ def add_new_transaction(sheet_name: str,
         f"A{index_add_cell}:E{index_add_cell}",
         raw=False
     )
-
+    log.debug("[TOOL-`add_new_transaction`] Transaction display format")
     # Format date
     worksheet.format(f"A{index_add_cell}", {"numberFormat": FORMAT_DATE})
 
@@ -71,13 +72,17 @@ def add_new_transaction(sheet_name: str,
         ]
     })
 
-    log.info("[TOOL-DONE] Excuted tool `add_new_transaction`")
-    return
+    log.debug("[TOOL-`add_new_transaction`] Tool executed successfully")
+    return ToolResult(
+        result=f"Add new transaction ({date} | {amount} | {transaction_type} | {description} | {payment_method})",
+        reference=worksheet.url
+    )
 
 
 # @tool
 # def add_multi_new_transactions():
 #     pass
+
 
 # @tool
 # def add_new_sheet():
@@ -86,4 +91,9 @@ def add_new_transaction(sheet_name: str,
 
 # @tool
 # def add_multi_new_sheets():
+#     pass
+
+
+# @tool
+# def add_new_spreadsheet(spreadsheet_name: str):
 #     pass

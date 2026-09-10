@@ -6,6 +6,7 @@ log = getLogger(__name__)
 import numpy as np
 from langchain_core.tools import tool
 
+from src.schema import ToolResult
 from src.tools.gg_sheet.client import client
 from src.tools.gg_sheet.utils import fill_date, filter_transaction
 
@@ -19,7 +20,7 @@ def get_transaction(sheet_name: str,
                     from_amount: float = None, to_amount: float = None,
                     transaction_type: Literal["Chi", "Nhận"] | None = None, description: str = None,
                     payment_method: Literal["Thẻ", "Tiền mặt"] | None = None
-                    ) -> List[List[str]]:
+                    ) -> ToolResult:
     """Retrieve transaction records from a worksheet with optional filtering.
 
     Fetches the cell values for the transaction details from the specified worksheet, applies filters based on the provided criteria and returns them as a list of rows.
@@ -37,12 +38,18 @@ def get_transaction(sheet_name: str,
     Returns:
         List[List[str]]: A list of rows, where each row is a list of string cell values. The first row typically contains the header labels.
     """
-    log.info("[TOOL] Excute tool `get_transaction`")
-    all_transaction = client.worksheet(title=sheet_name).get_all_values(range_name=RANGE)
+    log.debug("[TOOL-`get_transaction`] Execute tool")
+    sheet = client.worksheet(title=sheet_name)
+    all_transaction = sheet.get_all_values(range_name=RANGE)
     all_transaction = fill_date(all_transaction)
     filtered_transaction = filter_transaction(all_transaction, from_date, to_date, from_amount, to_amount, transaction_type, description, payment_method)
-    log.info("[TOOL-DONE] Excuted tool `get_transaction`")
-    return filtered_transaction
+    log.debug("[TOOL-`get_transaction`] Tool executed successfully")
+    return ToolResult(
+        result=filtered_transaction,
+        reference={
+            sheet_name: sheet.url
+        }
+    )
 
 
 @tool
@@ -50,7 +57,7 @@ def get_transaction_multi_sheet(sheet_names: List[str],
                                 from_amount: float = None, to_amount: float = None,
                                 transaction_type: Literal["Chi", "Nhận"] | None = None, description: str = None,
                                 payment_method: Literal["Thẻ", "Tiền mặt"] | None = None
-                                ) -> Dict[str, List[List[str]]]:
+                                ) -> ToolResult:
     """Retrieve all transaction records from multiple worksheets at once.
 
     Fetches the cell values for the transaction details from each specified worksheet and returns them in a single mapping.
@@ -66,22 +73,28 @@ def get_transaction_multi_sheet(sheet_names: List[str],
     Returns:
         Dict[str, List[List[str]]]: A dictionary mapping each worksheet title to its rows, where each row is a list of string cell values. The first row of each worksheet typically contains the header labels.
     """
-    log.info("[TOOL] Excute tool `get_transaction_multi_sheet`")
+    log.debug("[TOOL-`get_transaction_multi_sheet`] Execute tool")
     result = dict()
+    sheet_url = dict()
     for name in sheet_names:
-        all_transaction = client.worksheet(title=name).get_all_values(range_name=RANGE)
+        sheet = client.worksheet(title=name)
+        all_transaction = sheet.get_all_values(range_name=RANGE)
         all_transaction = fill_date(all_transaction)
         filtered_transaction = filter_transaction(all_transaction, None, None, from_amount, to_amount, transaction_type, description, payment_method)
         result[name] = filtered_transaction
-    log.info("[TOOL-DONE] Excuted tool `get_transaction_multi_sheet`")
-    return result
+        sheet_url[name] = sheet.url
+    log.debug("[TOOL-`get_transaction_multi_sheet`] Tool executed successfully")
+    return ToolResult(
+        result=result,
+        reference=sheet_url
+    )
 
 
 @tool
 def get_all_transactions(from_amount: float = None, to_amount: float = None,
                         transaction_type: Literal["Chi", "Nhận"] | None = None, description: str = None,
                         payment_method: Literal["Thẻ", "Tiền mặt"] | None = None
-                        ) -> Dict[str, List[List[str]]]:
+                        ) -> ToolResult:
     """Retrieve transaction records from every worksheet in the spreadsheet.
 
     Fetches the cell values for the transaction details from all worksheets and returns them in a single mapping.
@@ -96,9 +109,10 @@ def get_all_transactions(from_amount: float = None, to_amount: float = None,
     Returns:
         Dict[str, List[List[str]]]: A dictionary mapping each worksheet title to its rows, where each row is a list of string cell values.
     """
-    log.info("[TOOL] Excute tool `get_all_transactions`")
+    log.debug("[TOOL-`get_all_transactions`] Execute tool")
     all_worksheets = client.worksheets()
     result = dict()
+    sheet_url = dict()
     for worksheet in all_worksheets:
         if worksheet.title == "Tổng hợp":
             continue
@@ -106,8 +120,12 @@ def get_all_transactions(from_amount: float = None, to_amount: float = None,
         all_transaction = fill_date(all_transaction)
         filtered_transaction = filter_transaction(all_transaction, None, None, from_amount, to_amount, transaction_type, description, payment_method)
         result[worksheet.title] = filtered_transaction
-    log.info("[TOOL-DONE] Excuted tool `get_all_transactions`")
-    return result
+        sheet_url[worksheet.title] = worksheet.url
+    log.debug("[TOOL-`get_all_transactions`] Tool executed successfully")
+    return ToolResult(
+        result=result,
+        reference=sheet_url
+    )
 
 
 # ================================ COUNT Action ================================
@@ -116,7 +134,7 @@ def count_transaction(sheet_name: str,
                       from_date: str = None, to_date: str = None,
                       from_amount: float = None, to_amount: float = None,
                       transaction_type: Literal["Chi", "Nhận"] | None = None, description: str = None,
-                      payment_method: Literal["Thẻ", "Tiền mặt"] | None = None) -> int:
+                      payment_method: Literal["Thẻ", "Tiền mặt"] | None = None) -> ToolResult:
     """Count the number of transaction records in a worksheet with optional filtering.
 
     Reads the transaction rows from the specified worksheet, applies filters based on the provided criteria, and returns the total number of matching records.
@@ -134,12 +152,17 @@ def count_transaction(sheet_name: str,
     Returns:
         int: The number of transaction records matching the criteria.
     """
-    log.info("[TOOL] Excute tool `count_transaction`")
-    all_transaction = client.worksheet(title=sheet_name).get_all_values(range_name=RANGE)
+    log.debug("[TOOL-`count_transaction`] Execute tool")
+    sheet = client.worksheet(title=sheet_name)
+    all_transaction = sheet.get_all_values(range_name=RANGE)
     all_transaction = fill_date(all_transaction)
     filtered_transaction = filter_transaction(all_transaction, from_date, to_date, from_amount, to_amount, transaction_type, description, payment_method)
-    log.info("[TOOL-DONE] Excuted tool `count_transaction`")
-    return len(filtered_transaction) - 1 # Skip header row
+    log.debug("[TOOL-`count_transaction`] Tool executed successfully")
+    return ToolResult(
+        result=len(filtered_transaction) - 1, # Skip header row
+        reference={sheet_name: sheet.url}
+    )
+
 
 
 @tool
@@ -147,7 +170,7 @@ def count_transaction_multi_sheet(sheet_names: List[str],
                                 from_amount: float = None, to_amount: float = None,
                                 transaction_type: Literal["Chi", "Nhận"] | None = None, description: str = None,
                                 payment_method: Literal["Thẻ", "Tiền mặt"] | None = None
-                                ) -> Dict[str, int]:
+                                ) -> ToolResult:
     """Count transaction records in multiple worksheets at once.
 
     Reads the transaction rows from each specified worksheet and returns the number of records for each, excluding the header rows.
@@ -163,22 +186,28 @@ def count_transaction_multi_sheet(sheet_names: List[str],
     Returns:
         Dict[str, int]: A dictionary mapping each worksheet title to its number of transaction records (excluding the header row).
     """
-    log.info("[TOOL] Excute tool `count_transaction_multi_sheet`")
+    log.debug("[TOOL-`count_transaction_multi_sheet`] Execute tool")
     result = dict()
+    sheet_url = dict()
     for name in sheet_names:
-        all_transaction = client.worksheet(title=name).get_all_values(range_name=RANGE)
+        sheet = client.worksheet(title=name)
+        all_transaction = sheet.get_all_values(range_name=RANGE)
         all_transaction = fill_date(all_transaction)
         filtered_transaction = filter_transaction(all_transaction, None, None, from_amount, to_amount, transaction_type, description, payment_method)
         result[name] = len(filtered_transaction) - 1 # Skip header row
-    log.info("[TOOL-DONE] Excuted tool `count_transaction_multi_sheet`")
-    return result
+        sheet_url[name] = sheet.url
+    log.debug("[TOOL-`count_transaction_multi_sheet`] Tool executed successfully")
+    return ToolResult(
+        result=result,
+        reference=sheet_url
+    )
 
 
 @tool
 def count_all_transactions(from_amount: float = None, to_amount: float = None,
                         transaction_type: Literal["Chi", "Nhận"] | None = None, description: str = None,
                         payment_method: Literal["Thẻ", "Tiền mặt"] | None = None
-                        ) -> Dict[str, int]:
+                        ) -> ToolResult:
     """Count transaction records in every worksheet of the spreadsheet.
 
     Reads the transaction rows from all worksheets and returns the number of records for each, excluding the header rows.
@@ -193,9 +222,10 @@ def count_all_transactions(from_amount: float = None, to_amount: float = None,
     Returns:
         Dict[str, int]: A dictionary mapping each worksheet title to its number of transaction records (excluding the header row).
     """
-    log.info("[TOOL] Excute tool `count_all_transactions`")
+    log.debug("[TOOL-`count_all_transactions`] Execute tool")
     all_worksheets = client.worksheets()
     result = dict()
+    sheet_url = dict()
     for worksheet in all_worksheets:
         if worksheet.title == "Tổng hợp":
             continue
@@ -203,12 +233,16 @@ def count_all_transactions(from_amount: float = None, to_amount: float = None,
         all_transaction = fill_date(all_transaction)
         filtered_transaction = filter_transaction(all_transaction, None, None, from_amount, to_amount, transaction_type, description, payment_method)
         result[worksheet.title] = len(filtered_transaction) - 1 # Skip header row
-    log.info("[TOOL-DONE] Excuted tool `count_all_transactions`")
-    return result
+        sheet_url[worksheet.title] = worksheet.url
+    log.debug("[TOOL-`count_all_transactions`] Tool executed successfully")
+    return ToolResult(
+        result=result,
+        reference=sheet_url
+    )
 
 
 @tool
-def count_distribution_transaction(sheet_name: str, by: str = Literal["date", "transaction_type", "payment_method"]) -> Dict[str, int]:
+def count_distribution_transaction(sheet_name: str, by: Literal["date", "transaction_type", "payment_method"]) -> ToolResult:
     """Count transactions in a worksheet grouped by a specified field.
 
     Args:
@@ -220,9 +254,10 @@ def count_distribution_transaction(sheet_name: str, by: str = Literal["date", "t
     Returns: 
         Dict[str, int]: A dictionary mapping each distinct value of the selected field to the number of transactions with that value.
     """
-    log.info("[TOOL] Excute tool `count_distribution_transaction`")
+    log.debug("[TOOL-`count_distribution_transaction`] Execute tool")
     distribution = dict()
-    all_transaction = client.worksheet(title=sheet_name).get_all_values(range_name=RANGE)
+    sheet = client.worksheet(title=sheet_name)
+    all_transaction = sheet.get_all_values(range_name=RANGE)
     all_transaction = fill_date(all_transaction)
     by_dict = {
         "date": transaction[0],
@@ -233,12 +268,15 @@ def count_distribution_transaction(sheet_name: str, by: str = Literal["date", "t
         type_count = by_dict[by]
         distribution[type_count] = distribution.get(type_count, 0) + 1
 
-    log.info("[TOOL-DONE] Excuted tool `count_distribution_transaction`")
-    return distribution
+    log.debug("[TOOL-`count_distribution_transaction`] Tool executed successfully")
+    return ToolResult(
+        result=distribution,
+        reference=sheet.url
+    )
 
 
 @tool
-def count_distribution_transaction_multi_sheet(sheet_names: List[str], by: Literal["date", "transaction_type", "payment_method"]) -> Dict[str, int]:
+def count_distribution_transaction_multi_sheet(sheet_names: List[str], by: Literal["date", "transaction_type", "payment_method"]) -> ToolResult:
     """Count transactions of one or more worksheet grouped by a specified field.
 
     Args:
@@ -250,31 +288,36 @@ def count_distribution_transaction_multi_sheet(sheet_names: List[str], by: Liter
     Returns: 
         Dict[str, int]: A dictionary mapping each distinct value of the selected field to the number of transactions with that value.
     """
-    log.info("[TOOL] Excute tool `count_distribution_transaction`")
+    log.debug("[TOOL-`count_distribution_transaction`] Execute tool")
     distribution = dict()
+    sheet_url = dict()
     by_dict = {
         "date": transaction[0],
         "transaction_type": transaction[2],
         "dapayment_methodte": transaction[4]
     }
-    for sheet in sheet_names:
-        distribution[sheet] = dict()
-        all_transaction = client.worksheet(title=sheet).get_all_values(range_name=RANGE)
+    for name in sheet_names:
+        distribution[name] = dict()
+        sheet = client.worksheet(title=name)
+        all_transaction = sheet.get_all_values(range_name=RANGE)
         all_transaction = fill_date(all_transaction)
         
         for transaction in all_transaction:
             type_count = by_dict[by]
-            distribution[sheet][type_count] = distribution[sheet].get(type_count, 0) + 1
-
-    log.info("[TOOL-DONE] Excuted tool `count_distribution_transaction`")
-    return distribution
-
-
-@tool
-def count_total_amount(sheet_name: str):
-    pass
+            distribution[name][type_count] = distribution[name].get(type_count, 0) + 1
+        sheet_url[name] = sheet.url
+    log.debug("[TOOL-`count_distribution_transaction`] Tool executed successfully")
+    return ToolResult(
+        result=distribution,
+        reference=sheet_url
+    )
 
 
-@tool
-def count_total_amount_multi_sheet(sheet_names: List[str]):
-    pass
+# @tool
+# def count_total_amount(sheet_name: str):
+#     pass
+
+
+# @tool
+# def count_total_amount_multi_sheet(sheet_names: List[str]):
+#     pass
