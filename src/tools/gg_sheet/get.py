@@ -38,12 +38,12 @@ def get_transaction(sheet_name: str,
     Returns:
         List[List[str]]: A list of rows, where each row is a list of string cell values. The first row typically contains the header labels.
     """
-    log.debug("[TOOL-`get_transaction`] Execute tool")
+    log.info("[TOOL-`get_transaction`] Execute tool")
     sheet = client.worksheet(title=sheet_name)
     all_transaction = sheet.get_all_values(range_name=RANGE)
     all_transaction = fill_date(all_transaction)
     filtered_transaction = filter_transaction(all_transaction, from_date, to_date, from_amount, to_amount, transaction_type, description, payment_method)
-    log.debug("[TOOL-`get_transaction`] Tool executed successfully")
+    log.info("[TOOL-`get_transaction`] Tool executed successfully")
     return ToolResult(
         result=filtered_transaction,
         reference={
@@ -73,7 +73,7 @@ def get_transaction_multi_sheet(sheet_names: List[str],
     Returns:
         Dict[str, List[List[str]]]: A dictionary mapping each worksheet title to its rows, where each row is a list of string cell values. The first row of each worksheet typically contains the header labels.
     """
-    log.debug("[TOOL-`get_transaction_multi_sheet`] Execute tool")
+    log.info("[TOOL-`get_transaction_multi_sheet`] Execute tool")
     result = dict()
     sheet_url = dict()
     for name in sheet_names:
@@ -83,7 +83,7 @@ def get_transaction_multi_sheet(sheet_names: List[str],
         filtered_transaction = filter_transaction(all_transaction, None, None, from_amount, to_amount, transaction_type, description, payment_method)
         result[name] = filtered_transaction
         sheet_url[name] = sheet.url
-    log.debug("[TOOL-`get_transaction_multi_sheet`] Tool executed successfully")
+    log.info("[TOOL-`get_transaction_multi_sheet`] Tool executed successfully")
     return ToolResult(
         result=result,
         reference=sheet_url
@@ -109,7 +109,7 @@ def get_all_transactions(from_amount: float = None, to_amount: float = None,
     Returns:
         Dict[str, List[List[str]]]: A dictionary mapping each worksheet title to its rows, where each row is a list of string cell values.
     """
-    log.debug("[TOOL-`get_all_transactions`] Execute tool")
+    log.info("[TOOL-`get_all_transactions`] Execute tool")
     all_worksheets = client.worksheets()
     result = dict()
     sheet_url = dict()
@@ -121,7 +121,7 @@ def get_all_transactions(from_amount: float = None, to_amount: float = None,
         filtered_transaction = filter_transaction(all_transaction, None, None, from_amount, to_amount, transaction_type, description, payment_method)
         result[worksheet.title] = filtered_transaction
         sheet_url[worksheet.title] = worksheet.url
-    log.debug("[TOOL-`get_all_transactions`] Tool executed successfully")
+    log.info("[TOOL-`get_all_transactions`] Tool executed successfully")
     return ToolResult(
         result=result,
         reference=sheet_url
@@ -152,12 +152,12 @@ def count_transaction(sheet_name: str,
     Returns:
         int: The number of transaction records matching the criteria.
     """
-    log.debug("[TOOL-`count_transaction`] Execute tool")
+    log.info("[TOOL-`count_transaction`] Execute tool")
     sheet = client.worksheet(title=sheet_name)
     all_transaction = sheet.get_all_values(range_name=RANGE)
     all_transaction = fill_date(all_transaction)
     filtered_transaction = filter_transaction(all_transaction, from_date, to_date, from_amount, to_amount, transaction_type, description, payment_method)
-    log.debug("[TOOL-`count_transaction`] Tool executed successfully")
+    log.info("[TOOL-`count_transaction`] Tool executed successfully")
     return ToolResult(
         result=len(filtered_transaction) - 1, # Skip header row
         reference={sheet_name: sheet.url}
@@ -186,7 +186,7 @@ def count_transaction_multi_sheet(sheet_names: List[str],
     Returns:
         Dict[str, int]: A dictionary mapping each worksheet title to its number of transaction records (excluding the header row).
     """
-    log.debug("[TOOL-`count_transaction_multi_sheet`] Execute tool")
+    log.info("[TOOL-`count_transaction_multi_sheet`] Execute tool")
     result = dict()
     sheet_url = dict()
     for name in sheet_names:
@@ -196,7 +196,7 @@ def count_transaction_multi_sheet(sheet_names: List[str],
         filtered_transaction = filter_transaction(all_transaction, None, None, from_amount, to_amount, transaction_type, description, payment_method)
         result[name] = len(filtered_transaction) - 1 # Skip header row
         sheet_url[name] = sheet.url
-    log.debug("[TOOL-`count_transaction_multi_sheet`] Tool executed successfully")
+    log.info("[TOOL-`count_transaction_multi_sheet`] Tool executed successfully")
     return ToolResult(
         result=result,
         reference=sheet_url
@@ -222,7 +222,7 @@ def count_all_transactions(from_amount: float = None, to_amount: float = None,
     Returns:
         Dict[str, int]: A dictionary mapping each worksheet title to its number of transaction records (excluding the header row).
     """
-    log.debug("[TOOL-`count_all_transactions`] Execute tool")
+    log.info("[TOOL-`count_all_transactions`] Execute tool")
     all_worksheets = client.worksheets()
     result = dict()
     sheet_url = dict()
@@ -234,7 +234,7 @@ def count_all_transactions(from_amount: float = None, to_amount: float = None,
         filtered_transaction = filter_transaction(all_transaction, None, None, from_amount, to_amount, transaction_type, description, payment_method)
         result[worksheet.title] = len(filtered_transaction) - 1 # Skip header row
         sheet_url[worksheet.title] = worksheet.url
-    log.debug("[TOOL-`count_all_transactions`] Tool executed successfully")
+    log.info("[TOOL-`count_all_transactions`] Tool executed successfully")
     return ToolResult(
         result=result,
         reference=sheet_url
@@ -254,7 +254,7 @@ def count_distribution_transaction(sheet_name: str, by: Literal["date", "transac
     Returns: 
         Dict[str, int]: A dictionary mapping each distinct value of the selected field to the number of transactions with that value.
     """
-    log.debug("[TOOL-`count_distribution_transaction`] Execute tool")
+    log.info("[TOOL-`count_distribution_transaction`] Execute tool")
     distribution = dict()
     sheet = client.worksheet(title=sheet_name)
     all_transaction = sheet.get_all_values(range_name=RANGE)
@@ -268,7 +268,7 @@ def count_distribution_transaction(sheet_name: str, by: Literal["date", "transac
         type_count = by_dict[by]
         distribution[type_count] = distribution.get(type_count, 0) + 1
 
-    log.debug("[TOOL-`count_distribution_transaction`] Tool executed successfully")
+    log.info("[TOOL-`count_distribution_transaction`] Tool executed successfully")
     return ToolResult(
         result=distribution,
         reference=sheet.url
@@ -288,7 +288,7 @@ def count_distribution_transaction_multi_sheet(sheet_names: List[str], by: Liter
     Returns: 
         Dict[str, int]: A dictionary mapping each distinct value of the selected field to the number of transactions with that value.
     """
-    log.debug("[TOOL-`count_distribution_transaction`] Execute tool")
+    log.info("[TOOL-`count_distribution_transaction`] Execute tool")
     distribution = dict()
     sheet_url = dict()
     by_dict = {
@@ -306,7 +306,7 @@ def count_distribution_transaction_multi_sheet(sheet_names: List[str], by: Liter
             type_count = by_dict[by]
             distribution[name][type_count] = distribution[name].get(type_count, 0) + 1
         sheet_url[name] = sheet.url
-    log.debug("[TOOL-`count_distribution_transaction`] Tool executed successfully")
+    log.info("[TOOL-`count_distribution_transaction`] Tool executed successfully")
     return ToolResult(
         result=distribution,
         reference=sheet_url

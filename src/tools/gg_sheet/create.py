@@ -34,7 +34,7 @@ def add_new_transaction(sheet_name: str,
     Returns: 
         None: The transaction is added to the worksheet.
     """
-    log.debug("[TOOL-`add_new_transaction`] Execute tool")
+    log.info("[TOOL-`add_new_transaction`] Execute tool")
     worksheet = client.worksheet(title=sheet_name)
     all_transaction = worksheet.get_all_values(range_name=RANGE)
     all_transaction = fill_date(all_transaction)
@@ -49,7 +49,7 @@ def add_new_transaction(sheet_name: str,
         f"A{index_add_cell}:E{index_add_cell}",
         raw=False
     )
-    log.debug("[TOOL-`add_new_transaction`] Transaction display format")
+    log.info("[TOOL-`add_new_transaction`] Transaction display format")
     # Format date
     worksheet.format(f"A{index_add_cell}", {"numberFormat": FORMAT_DATE})
 
@@ -72,10 +72,10 @@ def add_new_transaction(sheet_name: str,
         ]
     })
 
-    log.debug("[TOOL-`add_new_transaction`] Tool executed successfully")
+    log.info("[TOOL-`add_new_transaction`] Tool executed successfully")
     return ToolResult(
         result=f"Add new transaction ({date} | {amount} | {transaction_type} | {description} | {payment_method})",
-        reference=worksheet.url
+        reference={sheet_name: worksheet.url}
     )
 
 
