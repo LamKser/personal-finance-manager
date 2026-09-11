@@ -391,4 +391,3 @@ def count_total_amount_multi_sheet(sheet_names: List[str],
         result=result,
         reference=sheet_url
     )
-

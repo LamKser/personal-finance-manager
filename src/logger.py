@@ -14,7 +14,7 @@ def logger(level: str = getenv("LOG_LEVEL", settings.log_level),
         
     logging.basicConfig(
         level=logging._nameToLevel[level.upper()],
-        format="%(asctime)s - [%(levelname)s][%(name)-40s] - %(message)s",
+        format="%(asctime)s | %(levelname)-10s | %(name)-35s | %(message)s",
         handlers=[
             logging.FileHandler(file_name, mode='a', encoding="utf-8"),
             logging.StreamHandler()
