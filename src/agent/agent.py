@@ -148,17 +148,26 @@ class LangGraphAgent:
         return Command(goto="llm")
 
     def check_tool_error_node(self, state: State) -> Command[Literal["llm-bind-tool", "llm"]]:
-        last_message = state["messages"][-1]
+        messages = state["messages"]
+        tool_messages = []
+        for message in reversed(messages):
+            if not isinstance(message, ToolMessage):
+                break
+
+            tool_messages.append(message)
+        tool_messages.reverse()
         retry_count = state.get("total_retry_tool", 0)
         max_retries = settings.max_tool_retry
        
         log.info("[NODE check-tool-error] Checking tool status (retry=%d/%d)", retry_count, max_retries)
-        if isinstance(last_message, ToolMessage):
-            log.info("[NODE tools] - %r", last_message)
+        for i, tool_message in enumerate(tool_messages, start=1):
+            log.info("[NODE tools #%d] - %r", i, tool_message)
 
-        if isinstance(last_message, ToolMessage) and last_message.status == "error":
-            log.error("[NODE check-tool-error] Tool failed: %r", last_message.content)
-           
+        # if isinstance(last_message, ToolMessage) and last_message.status == "error":
+        failed_tools = [message for message in tool_messages if message.status == "error"]
+        if failed_tools:
+            for i, tool in enumerate(failed_tools, start=1):
+                log.error("[NODE check-tool-error] Tool failed #%d: %r", i, tool.content)
             if retry_count < max_retries:
                 new_retry_count = retry_count + 1
                 log.info("[NODE check-tool-error] Routing to `llm-bind-tool` for retry (attempt %d/%d)", new_retry_count, max_retries)
