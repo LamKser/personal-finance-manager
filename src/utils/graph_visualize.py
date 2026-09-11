@@ -3,12 +3,11 @@ from PIL import Image
 
 class GraphVisualization:
 
-    def __init__(self):
-        pass
-    
+    @classmethod
     def visualize_mermaid(self, graph):
         return graph.get_graph().draw_mermaid()
-    
+
+    @classmethod
     def visualize_png(self, graph, save=None):
         if save:
             Image(graph.get_graph().draw_mermaid_png()).save(save)
