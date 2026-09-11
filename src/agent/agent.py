@@ -5,7 +5,7 @@ from logging import getLogger
 from langgraph.graph import StateGraph, END, START
 from langgraph.prebuilt import ToolNode
 from langgraph.types import Command
-from langchain_core.messages import ToolMessage
+from langchain_core.messages import ToolMessage, AIMessage
 
 from src.llm import LLM
 from src.router import SemanticToolRouter
@@ -64,15 +64,16 @@ class LangGraphAgent:
         graph.add_node("llm-bind-tool", self.agent_bind_tool)
         graph.add_node("tools", ToolNode(self.tools))
         graph.add_node("check-tool-error", self.check_tool_error_node)
-        graph.add_node("llm", self.llm_invoke)
+        # graph.add_node("llm", self.llm_invoke)
         log.info("[NODE] Finished adding nodes")
 
         # Add edges
         graph.add_edge(START, "router")
-        # graph.add_edge(START, "llm-bind-tool")
+        graph.add_edge("router", "llm-bind-tool")
         graph.add_edge("llm-bind-tool", "tools")
         graph.add_edge("tools", "check-tool-error")
-        graph.add_edge("llm", END)
+        # graph.add_edge("llm", END)
+        graph.add_edge("check-tool-error", END)
         log.info("[EDGE] Finished adding edges")
         return graph.compile()
 
@@ -113,23 +114,23 @@ class LangGraphAgent:
     
     # ============================== Build nodes ==============================
     # ------------------------------ Nodes ------------------------------
-    def llm_invoke(self, state: State):
-        response = self.llm.invoke(state["messages"])
-        state["output"] = response
-        log.info("[NODE llm]: %r", response)
+    # def llm_invoke(self, state: State):
+    #     response = self.llm.invoke(state["messages"])
+    #     state["output"] = response
+    #     log.info("[NODE llm]: %r", response)
 
-        return {
-            "messages": [response],
-            "total_token_llm": response.usage_metadata["total_tokens"],
-            "total_token": response.usage_metadata["total_tokens"]
-        }
+    #     return {
+    #         "messages": [response],
+    #         "total_token_llm": response.usage_metadata["total_tokens"],
+    #         "total_token": response.usage_metadata["total_tokens"]
+    #     }
 
     def agent_bind_tool(self, state: State):
         llm_with_tools = self.llm.bind_tools(state["tool_call"])
         bind_tool_response = llm_with_tools.invoke(state["messages"])
         log.info("[NODE llm-bind-tool]: %r", bind_tool_response)
         if not bind_tool_response.tool_calls:
-            log.info("[NODE llm-bind-tool]: No tool(s) available - Route to `llm`")
+            log.info("[NODE llm-bind-tool]: No tool(s) available. Generate final response")
         
         return {
             "messages": [bind_tool_response],
@@ -137,18 +138,24 @@ class LangGraphAgent:
             "total_token": bind_tool_response.usage_metadata["total_tokens"]
         } 
 
-    def router_node(self, state: State) -> Command[Literal["llm-bind-tool", "llm"]]:
+    def router_node(self, state: State):
         tool_retrieve = self.router.retrieve(state["user_input"], settings.top_tool, settings.tool_threshold)
         log.info("[NODE router]: Tool retrieve (%d tools): %r", len(tool_retrieve), [(tool["tool"].name, tool["score"]) for tool in tool_retrieve])
-        if tool_retrieve:
-            log.info("[NODE router]: Route to `llm-bind-tool`")
-            return Command(goto="llm-bind-tool", update={"tool_call": [tool["tool"] for tool in tool_retrieve]})
+        # if tool_retrieve:
+        log.info("[NODE router]: Route to `llm-bind-tool`")
+        return {"tool_call": [tool["tool"] for tool in tool_retrieve]}
         
-        log.info("[NODE router]: Route to `llm`")
-        return Command(goto="llm")
+        # log.info("[NODE router]: Route to `llm`")
+        # return Command(goto="llm")
 
-    def check_tool_error_node(self, state: State) -> Command[Literal["llm-bind-tool", "llm"]]:
+    def check_tool_error_node(self, state: State) -> Command[Literal["llm-bind-tool", "__end__"]]:
         messages = state["messages"]
+        if isinstance(messages[-1], AIMessage) and not messages[-1].tool_calls:
+            log.info("[NODE check-tool-error] No tool to execute. Generate final response")
+            return Command(
+                    goto=END,
+                    update={"total_retry_tool": 0}
+                )
         tool_messages = []
         for message in reversed(messages):
             if not isinstance(message, ToolMessage):
@@ -163,7 +170,6 @@ class LangGraphAgent:
         for i, tool_message in enumerate(tool_messages, start=1):
             log.info("[NODE tools #%d] - %r", i, tool_message)
 
-        # if isinstance(last_message, ToolMessage) and last_message.status == "error":
         failed_tools = [message for message in tool_messages if message.status == "error"]
         if failed_tools:
             for i, tool in enumerate(failed_tools, start=1):
@@ -176,10 +182,16 @@ class LangGraphAgent:
                     update={"total_retry_tool": new_retry_count}
                 )
             else:
-                log.warning("[NODE check-tool-error] Max retries reached (%d/%d), routing to `llm`", retry_count, max_retries)
-                return Command(goto="llm")
+                log.info("[NODE check-tool-error] Max retries reached (%d/%d), routing to `llm`", retry_count, max_retries)
+                return Command(
+                        goto=END,
+                        update={"total_retry_tool": 0}
+                    )
        
-        log.info("[NODE check-tool-error] Tool succeeded, routing to `llm`")
-        return Command(goto="llm")
+        log.info("[NODE check-tool-error] Tool succeeded")
+        return Command(
+                goto="llm-bind-tool",
+                update={"total_retry_tool": 0}
+            )
 
     # ------------------------------ Edges ------------------------------
