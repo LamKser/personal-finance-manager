@@ -1,1 +1,1 @@
-from src.tools.gg_sheet import client
+from src.tools.gg_sheet.client import GSheetClient

@@ -1,3 +1,5 @@
+
+
 from typing import Literal
 from logging import getLogger
 
@@ -6,7 +8,7 @@ log = getLogger(__name__)
 from langchain_core.tools import tool
 
 from src.schema import ToolResult
-from src.tools.gg_sheet.client import client
+from src.tools.gg_sheet.client import get_client
 from src.tools.gg_sheet.utils import fill_date, has_empty_cell, get_index_empty_cell_by_date
 from src.tools.gg_sheet.cell_format import FORMAT_CURRENCY, FORMAT_DATE, transaction_condition_style, payment_condition_style
 
@@ -35,7 +37,7 @@ def add_new_transaction(sheet_name: str,
         None: The transaction is added to the worksheet.
     """
     log.info("[TOOL-`add_new_transaction`] Execute tool")
-    worksheet = client.worksheet(title=sheet_name)
+    worksheet = get_client().worksheet(title=sheet_name)
     all_transaction = worksheet.get_all_values(range_name=RANGE)
     all_transaction = fill_date(all_transaction)
 
@@ -57,7 +59,7 @@ def add_new_transaction(sheet_name: str,
     worksheet.format(f"B{index_add_cell}", {"numberFormat": FORMAT_CURRENCY})
 
     # Format transaction type style - column C (3-4)
-    client.batch_update({
+    get_client().batch_update({
         "requests": [
             transaction_condition_style("Nhận", worksheet.id, index_add_cell-1, index_add_cell, 2, 3),
             transaction_condition_style("Chi", worksheet.id, index_add_cell-1, index_add_cell, 2, 3)
@@ -65,7 +67,7 @@ def add_new_transaction(sheet_name: str,
     })
 
     # # Format payment method style - column E (4-5)
-    client.batch_update({
+    get_client().batch_update({
         "requests": [
             payment_condition_style("Thẻ", worksheet.id, index_add_cell-1, index_add_cell, 4, 5),
             payment_condition_style("Tiền mặt", worksheet.id, index_add_cell-1, index_add_cell, 4, 5)
@@ -97,3 +99,4 @@ def add_new_transaction(sheet_name: str,
 # @tool
 # def add_new_spreadsheet(spreadsheet_name: str):
 #     pass
+

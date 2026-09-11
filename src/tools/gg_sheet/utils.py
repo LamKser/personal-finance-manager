@@ -1,3 +1,5 @@
+
+
 from typing import List
 from operator import itemgetter
 from datetime import datetime
@@ -29,12 +31,12 @@ def filter_transaction(transaction: List[List[str]],
 
         # "Số tiền" column
         if from_amount:
-            float_amount = float(row[1][:-2].replace(',', ''))
+            float_amount = convert_amount_to_float(row[1])
             if from_amount > float_amount:
                 continue
 
         if to_amount:
-            float_amount = float(row[1][:-2].replace(',', ''))
+            float_amount = convert_amount_to_float(row[1])
             if to_amount < float_amount:
                 continue
 
@@ -75,3 +77,7 @@ def get_index_empty_cell_by_date(values: List[List[str]], date: str) -> int:
         get_date = datetime.strptime(value[0], "%a, %d-%m-%Y").strftime("%d-%m-%Y")
         if has_empty_cell(value) or (new_date < get_date): return index
     return len(values) - 1
+
+
+def convert_amount_to_float(amount: str) -> float:
+    return float(amount[:-2].replace(',', ''))
