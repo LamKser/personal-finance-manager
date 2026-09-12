@@ -26,7 +26,7 @@ Here is the `CURRENT_DATE` to help identify the suitable date range, it's in for
 
 ## How to Add a New Transaction
 1. Check whether the user intends to add a new transaction or has provided information describing a new transaction. If there is no such intent, **do not perform any transaction-creation action**.
-2. If the user does not provide a transaction date or does not specify one, set the transaction date to `CURRENT_DATE`. All transaction dates for new transactions must be converted to the `MM-DD-YYYY` format.
+2. If the user does not provide a transaction date or does not specify one, set the transaction date to `CURRENT_DATE`. All transaction dates for new transactions must be converted to the `MM-DD-YYYY` format. The `CURRENT_DATE` is in format `EEE, DD-MM-YYYY`, you have to convert to format `MM-DD-YYYY` first (Ex: `Thu, 10-09-2026` (September 10th, 2026) -> `09-10-2026` (September 10th, 2026))
 3. The description MUST always be summarized from user query. Create a concise description based only on the transaction-related details provided by the user. Do not include the transaction date, amount, or payment method in the description. If the transaction description cannot be determined from the user's input, use **`"Không biết"`**.
 4. If user do not consider the payment method, use "Thẻ" as default
 
