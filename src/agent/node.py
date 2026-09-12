@@ -1,4 +1,4 @@
-from typing import Any, TypedDict, Dict
+from typing import Any, TypedDict, Dict, List
 
 from langchain_core.messages import ToolMessage
 from langchain_core.runnables import Runnable
@@ -34,7 +34,7 @@ class ToolCall(TypedDict):
 
 
 class SequentialToolNode(Runnable):
-    def __init__(self, tools: list[Any]) -> None:
+    def __init__(self, tools: List[ToolMessage]) -> None:
         self.tools = {tool.name: tool for tool in tools}
 
     def invoke(
@@ -42,13 +42,13 @@ class SequentialToolNode(Runnable):
         state: State,
         config: Any = None,
         **kwargs: Any,
-    ) -> dict[str, list[ToolMessage]]:
+    ) -> Dict[str, List[ToolMessage]]:
 
         last_message = state["messages"][-1]
 
-        tool_calls: list[ToolCall] = getattr(last_message, "tool_calls", [])
+        tool_calls: List[ToolCall] = getattr(last_message, "tool_calls", [])
 
-        tool_messages: list[ToolMessage] = []
+        tool_messages: List[ToolMessage] = []
 
         # Sequential execution
         for tool_call in tool_calls:
@@ -113,17 +113,17 @@ class SequentialToolNode(Runnable):
         state: State,
         config: Any = None,
         **kwargs: Any,
-    ) -> dict[str, list[ToolMessage]]:
+    ) -> Dict[str, List[ToolMessage]]:
 
         last_message = state["messages"][-1]
 
-        tool_calls: list[ToolCall] = getattr(
+        tool_calls: List[ToolCall] = getattr(
             last_message,
             "tool_calls",
             [],
         )
 
-        tool_messages: list[ToolMessage] = []
+        tool_messages: List[ToolMessage] = []
 
         # Sequential execution
         for tool_call in tool_calls:

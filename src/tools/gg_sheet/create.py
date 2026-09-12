@@ -28,7 +28,7 @@ def add_new_transaction(sheet_name: str,
         date (str): Date of transaction in 'MM-DD-YYYY' format.
         amount (float): Transaction amount.
         transaction_type (Literal["Chi", "Nhận"]): Type of transaction ("Nhận" or "Chi").
-        description (str): Summary of transaction. (ALWAYS HAVE. ONLY "Không biết" for unknown transaction)
+        description (str): Summary of transaction.
         payment_method (Literal["Thẻ", "Tiền mặt"]): Payment method used ("Thẻ" - made by online payment, card or other digital method, or "Tiền mặt" - made by cash).
 
     Returns: 
@@ -81,16 +81,11 @@ def add_new_transaction(sheet_name: str,
     })
     log.debug("[TOOL] - `add_new_transaction` - Formatted `payment_method`")
               
-    log.info("[TOOL-`add_new_transaction`] Tool executed successfully")
+    log.info("[TOOL] -`add_new_transaction` - Tool executed successfully")
     return ToolResult(
         result=f"Add new transaction ({date} | {amount} | {transaction_type} | {description} | {payment_method})",
         reference={sheet_name: worksheet.url}
     )
-
-
-# @tool
-# def add_multi_new_transactions():
-#     pass
 
 
 # @tool
