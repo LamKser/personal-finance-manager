@@ -3,11 +3,12 @@ from typing_extensions import Literal
 from logging import getLogger
 
 from langgraph.graph import StateGraph, END, START
-from langgraph.prebuilt import ToolNode
+# from langgraph.prebuilt import ToolNode
 from langgraph.types import Command
 from langchain_core.messages import ToolMessage, AIMessage
 
 from src.llm import LLM
+from src.agent.node import SequentialToolNode
 from src.router import SemanticToolRouter
 from src.knowledge_base import ToolKnowledgeBase
 from src.agent.state import State
@@ -62,7 +63,8 @@ class LangGraphAgent:
         # Add nodes
         graph.add_node("router", self.router_node)
         graph.add_node("llm-bind-tool", self.agent_bind_tool)
-        graph.add_node("tools", ToolNode(self.tools))
+        # graph.add_node("tools", ToolNode(self.tools))
+        graph.add_node("tools", SequentialToolNode(self.tools))
         graph.add_node("check-tool-error", self.check_tool_error_node)
         # graph.add_node("llm", self.llm_invoke)
         log.info("[NODE] Finished adding nodes")
