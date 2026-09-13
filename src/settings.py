@@ -16,6 +16,7 @@ class Settings(BaseSettings):
 
     # Agent
     llm_provider: str
+    vllm_url: str
     api_key: str
     llm_model: str
     llm_reasoning: bool

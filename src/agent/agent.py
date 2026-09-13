@@ -41,7 +41,13 @@ class LangGraphAgent:
             log.info("[TRACING] Using Langfuse tracing")
         
         self.tools = get_all_tools()
-        self.llm = LLM(settings.llm_provider, settings.llm_model, settings.llm_reasoning).get_llm()
+        self.llm = LLM(
+            provider = settings.llm_provider,
+            vllm_url = settings.vllm_url,
+            model = settings.llm_model,
+            reasoning = settings.llm_reasoning
+        ).get_llm()
+        
         log.info("[LLM] Using Provider: '%s' - Model: '%s' - think_mode: '%s'", settings.llm_provider, settings.llm_model, settings.llm_reasoning)
 
         self.tool_kb = ToolKnowledgeBase(settings.embedding_provider,
