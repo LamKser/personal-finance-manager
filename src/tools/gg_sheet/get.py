@@ -262,7 +262,7 @@ def count_distribution_transaction(sheet_name: str, by: Literal["date", "transac
     sheet = get_client().worksheet(title=sheet_name)
     all_transaction = sheet.get_all_values(range_name=RANGE)
     all_transaction = fill_date(all_transaction)
-    for transaction in all_transaction:
+    for transaction in all_transaction[1:]:
         by_dict = {
             "date": transaction[0],
             "transaction_type": transaction[2],
@@ -274,7 +274,7 @@ def count_distribution_transaction(sheet_name: str, by: Literal["date", "transac
     log.info("[TOOL] - `count_distribution_transaction` - Tool executed successfully")
     return ToolResult(
         result=distribution,
-        reference=sheet.url
+        reference={sheet_name: sheet.url}
     )
 
 
@@ -301,7 +301,7 @@ def count_distribution_transaction_multi_sheet(sheet_names: List[str], by: Liter
         all_transaction = sheet.get_all_values(range_name=RANGE)
         all_transaction = fill_date(all_transaction)
         
-        for transaction in all_transaction:
+        for transaction in all_transaction[1:]:
             by_dict = {
                 "date": transaction[0],
                 "transaction_type": transaction[2],
@@ -344,7 +344,7 @@ def count_total_amount(sheet_name: str,
     all_transaction = sheet.get_all_values(range_name=RANGE)
     all_transaction = fill_date(all_transaction)
     filtered_transaction = filter_transaction(all_transaction, from_date, to_date, from_amount, to_amount, transaction_type, description, payment_method)
-    result = sum([convert_amount_to_float(transaction[1]) for transaction in filtered_transaction])
+    result = sum([convert_amount_to_float(transaction[1]) for transaction in filtered_transaction[1:]])
 
     log.info("[TOOL] - `count_total_amount` - Tool executed successfully")
     return ToolResult(
@@ -383,7 +383,7 @@ def count_total_amount_multi_sheet(sheet_names: List[str],
         all_transaction = sheet.get_all_values(range_name=RANGE)
         all_transaction = fill_date(all_transaction)
         filtered_transaction = filter_transaction(all_transaction, from_date, to_date, from_amount, to_amount, transaction_type, description, payment_method)
-        result[sheet_name] = sum([convert_amount_to_float(transaction[1]) for transaction in filtered_transaction])
+        result[sheet_name] = sum([convert_amount_to_float(transaction[1]) for transaction in filtered_transaction[1:]])
         sheet_url[sheet_name] = sheet.url
     
     log.info("[TOOL] - `count_total_amount_multi_sheet` - Tool executed successfully")
