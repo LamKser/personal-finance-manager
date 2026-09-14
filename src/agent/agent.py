@@ -38,7 +38,7 @@ class LangGraphAgent:
             )
             self.langfuse = get_client()
             self.callback = {"callbacks": [CallbackHandler()]}
-            log.info("[TRACING] Using Langfuse tracing")
+            log.info("[TRACING] - Using Langfuse tracing")
         
         self.tools = get_all_tools()
         self.llm = LLM(
@@ -48,7 +48,7 @@ class LangGraphAgent:
             reasoning = settings.llm_reasoning
         ).get_llm()
         
-        log.info("[LLM] Using Provider: '%s' - Model: '%s' - think_mode: '%s'", settings.llm_provider, settings.llm_model, settings.llm_reasoning)
+        log.info("[LLM] - Using Provider: '%s' - Model: '%s' - think_mode: '%s'", settings.llm_provider, settings.llm_model, settings.llm_reasoning)
 
         self.tool_kb = ToolKnowledgeBase(settings.embedding_provider,
                                          settings.embedding_model,
@@ -62,7 +62,7 @@ class LangGraphAgent:
                                          settings.tool_kb)
 
         self.graph = self.build_graph()
-        log.info("[AGENT] Successfully build graph")
+        log.info("[AGENT] - Successfully build graph")
 
     def build_graph(self):
         graph = StateGraph(State)
@@ -73,7 +73,7 @@ class LangGraphAgent:
         graph.add_node("tools", SequentialToolNode(self.tools))
         graph.add_node("check-tool-error", self.check_tool_error_node)
         # graph.add_node("llm", self.llm_invoke)
-        log.info("[NODE] Finished adding nodes")
+        log.info("[NODE] - Finished adding nodes")
 
         # Add edges
         graph.add_edge(START, "router")
@@ -82,11 +82,11 @@ class LangGraphAgent:
         graph.add_edge("tools", "check-tool-error")
         # graph.add_edge("llm", END)
         graph.add_edge("check-tool-error", END)
-        log.info("[EDGE] Finished adding edges")
+        log.info("[EDGE] - Finished adding edges")
         return graph.compile()
 
     def invoke_graph(self, query: str):
-        log.info("[USER] Prompt: %s", query)
+        log.info("[USER] - Prompt: %s", query)
         messages = [{"role": "system", "content": SYSTEM_PROMPT.format(CURRENT_DATE=get_today_datetime())},
                     {"role": "user", "content": query}]
         result = self.graph.invoke(
@@ -99,7 +99,7 @@ class LangGraphAgent:
              "tool_call": []
              },
              config=self.callback)
-        log.info("[AGENT] Response: %r", result["messages"][-1].content)
+        log.info("[AGENT] - Response: %r", result["messages"][-1].content)
         return result
     
     # def stream_(self, messages: List[str]):
@@ -152,8 +152,8 @@ class LangGraphAgent:
         llm_with_tools = self.llm.bind_tools(state["tool_call"])
         bind_tool_response = llm_with_tools.invoke(state["messages"])
         if not bind_tool_response.tool_calls:
-            log.info("[NODE llm-bind-tool]: No tool(s) available. Generate final response")
-        log.info("[NODE llm-bind-tool]: %r", bind_tool_response)
+            log.info("[NODE] - `llm-bind-tool` - No tool(s) available. Generate final response")
+        log.info("[NODE] - `llm-bind-tool` - Response: %r", bind_tool_response)
         return {
             "messages": [bind_tool_response],
             "total_token_tool_call": bind_tool_response.usage_metadata["total_tokens"],
@@ -162,9 +162,9 @@ class LangGraphAgent:
 
     def router_node(self, state: State):
         tool_retrieve = self.router.retrieve(state["user_input"], settings.top_tool, settings.tool_threshold)
-        log.info("[NODE router]: Tool retrieve (%d tools): %r", len(tool_retrieve), [(tool["tool"].name, tool["score"]) for tool in tool_retrieve])
+        log.info("[NODE] - `router` - Tool retrieve (%d tools): %r", len(tool_retrieve), [(tool["tool"].name, tool["score"]) for tool in tool_retrieve])
         # if tool_retrieve:
-        log.info("[NODE router]: Route to `llm-bind-tool`")
+        log.info("[NODE] - `router` - Route to `llm-bind-tool`")
         return {"tool_call": [tool["tool"] for tool in tool_retrieve]}
         
         # log.info("[NODE router]: Route to `llm`")
@@ -173,7 +173,7 @@ class LangGraphAgent:
     def check_tool_error_node(self, state: State) -> Command[Literal["llm-bind-tool", "__end__"]]:
         messages = state["messages"]
         if isinstance(messages[-1], AIMessage) and not messages[-1].tool_calls:
-            log.info("[NODE check-tool-error] No tool to execute.")
+            log.info("[NODE] - `check-tool-error` - No tool to execute.")
             return Command(
                     goto=END,
                     update={"total_retry_tool": 0}
@@ -188,29 +188,29 @@ class LangGraphAgent:
         retry_count = state.get("total_retry_tool", 0)
         max_retries = settings.max_tool_retry
        
-        log.info("[NODE check-tool-error] Checking tool status (retry=%d/%d)", retry_count, max_retries)
+        log.info("[NODE] - `check-tool-error` - Checking tool status (retry=%d/%d)", retry_count, max_retries)
         for i, tool_message in enumerate(tool_messages, start=1):
-            log.info("[NODE tools #%d] - %r", i, tool_message)
+            log.info("[NODE] - `check-tool-error` - Tool #%d: %r", i, tool_message)
 
         failed_tools = [message for message in tool_messages if message.status == "error"]
         if failed_tools:
             for i, tool in enumerate(failed_tools, start=1):
-                log.error("[NODE check-tool-error] Tool failed #%d: %r", i, tool.content)
+                log.error("[NODE] - `check-tool-error` - Tool failed #%d: %r", i, tool.content)
             if retry_count < max_retries:
                 new_retry_count = retry_count + 1
-                log.info("[NODE check-tool-error] Routing to `llm-bind-tool` for retry (attempt %d/%d)", new_retry_count, max_retries)
+                log.info("[NODE] - `check-tool-error` - Routing to `llm-bind-tool` for retry (attempt %d/%d)", new_retry_count, max_retries)
                 return Command(
                     goto="llm-bind-tool",
                     update={"total_retry_tool": new_retry_count}
                 )
             else:
-                log.info("[NODE check-tool-error] Max retries reached (%d/%d)", retry_count, max_retries)
+                log.info("[NODE] - `check-tool-error` - Max retries reached (%d/%d)", retry_count, max_retries)
                 return Command(
                         goto=END,
                         update={"total_retry_tool": 0}
                     )
        
-        log.info("[NODE check-tool-error] Tool succeeded")
+        log.info("[NODE] - `check-tool-error` - Tool succeeded")
         return Command(
                 goto="llm-bind-tool",
                 update={"total_retry_tool": 0}

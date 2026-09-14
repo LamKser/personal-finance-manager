@@ -1,5 +1,6 @@
 
 
+
 from typing import Dict, List, Literal
 from logging import getLogger
 
@@ -45,7 +46,7 @@ def get_transaction(sheet_name: str,
     all_transaction = sheet.get_all_values(range_name=RANGE)
     all_transaction = fill_date(all_transaction)
     filtered_transaction = filter_transaction(all_transaction, from_date, to_date, from_amount, to_amount, transaction_type, description, payment_method)
-    log.info("[TOOL] -`get_transaction` - Tool executed successfully")
+    log.info("[TOOL] - `get_transaction` - Tool executed successfully")
     return ToolResult(
         result=filtered_transaction,
         reference={
