@@ -1,6 +1,6 @@
 
 
-from typing import List
+from typing import List, Tuple
 from operator import itemgetter
 from datetime import datetime
 
@@ -71,13 +71,26 @@ def has_empty_cell(values: List[str]) -> bool:
 
 
 def get_index_empty_cell_by_date(values: List[List[str]], date: str) -> int:
-    new_date = datetime.strptime(date, "%m-%d-%Y").strftime("%d-%m-%Y")
+    new_date = datetime.strptime(date, "%m-%d-%Y").strftime(NEW_DATE_FORMAT)
     for index, value in enumerate(values, start=0):
         if index == 0: continue
-        get_date = datetime.strptime(value[0], "%a, %d-%m-%Y").strftime("%d-%m-%Y")
-        if has_empty_cell(value) or (new_date < get_date): return index
+        get_date = datetime.strptime(value[0], "%a, %d-%m-%Y").strftime(NEW_DATE_FORMAT)
+        if has_empty_cell(value.copy()) or (new_date < get_date): return index - 1
     return len(values) - 1
 
 
 def convert_amount_to_float(amount: str) -> float:
     return float(amount[:-2].replace(',', ''))
+
+
+def get_merge_range_date(transaction: List[List[str]], date: str) -> Tuple[int, int]:
+    if len(transaction) == 2: return 0, 0
+    new_date = datetime.strptime(date, "%m-%d-%Y").strftime(OLD_DATE_FORMAT)
+    start_row, end_row = 0, 0
+    for index, row in enumerate(transaction[1:], start=2):
+        if row[0] == new_date:
+            if not start_row:
+                start_row = index
+            end_row = index
+    return start_row, end_row
+    
