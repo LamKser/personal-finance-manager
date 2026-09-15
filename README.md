@@ -9,9 +9,8 @@ git clone https://github.com/LamKser/personal-finance-manager.git
 cd personal-finance-manager
 
 # Create the conda environment and install dependencies
-conda create -n pfm python=3.11 -y
-conda activate pfm
-pip install -r requirements.txt   # or: conda env update -f environment.yml
+conda env create -f environment.yml
+conda activate tele
 
 # 2. Configure your local environment
 cp .env.example .env
@@ -73,20 +72,3 @@ The graph shows the agent's execution flow as a LangGraph state machine:
 - **`llm-bind-tool`**: Binds the selected tool(s) and composes the call.
 - **`tools`**: The chosen tool is executed.
 - **`check-tool-error`**: Check if tool is error. If a tool failed, the flow loops back to **`llm-bind-tool`** to retry with a corrected call (up to `MAX_TOOL_RETRY`). Once the tool succeeds, control also returns to **`llm-bind-tool`**, which now generates the final natural-language response.
-
-## Usage
-
-```python
-from src.agent import LangGraphAgent
-
-agent = LangGraphAgent()
-
-history = [
-    "Đếm số giao dịch của Tháng 2"
-]
-
-result = agent.invoke_graph(history)
-print(result["messages"][-1].content)
-```
-
-The same entry point is used by `main.py`, which boots the agent and runs a sample prompt.
