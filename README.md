@@ -1,17 +1,11 @@
 
 # Personal finance management
 
-## *Updates* 🔥
-
-- **[2026/09]** Semantic tool routing — the agent embeds your question and picks only the most relevant sheet tools before calling the LLM
-- **[2026/09]** Google-Sheet transaction tools for retrieving and counting records across single, multiple and all worksheets
-- **[2026/08]** LangGraph agent graph with tool-error retry loop and token tracking
-
 ## Quick Start
 
 ```bash
 # 1. Clone and set up the environment
-git clone <your-repo-url> personal-finance-manager
+git clone https://github.com/LamKser/personal-finance-manager.git
 cd personal-finance-manager
 
 # Create the conda environment and install dependencies
@@ -24,7 +18,12 @@ cp .env.example .env
 # Edit .env with your LLM, embedding and Google Sheet credentials
 
 # 3. Run the agent
-python main.py
+python main.py --prompt="Lấy thông tin giao dịch tháng 7"
+
+-s, --stream: Streaming final response
+
+# 4. FastAPI
+uvicorn src.api:app
 ```
 
 ## Installation
@@ -39,116 +38,41 @@ CREDENTIAL=path/to/service_account.json
 SHEET_KEY=your_spreadsheet_key
 ```
 
-## Configuration
-
-All settings are loaded from environment variables (via `.env`, managed with `pydantic-settings`). Copy the example and adjust:
-
-```bash
-cp .env.example .env
-```
-
-### Agent
-
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `LLM_PROVIDER` | LLM backend | `ollama` |
-| `LLM_MODEL` | Chat model name | `gemma4:26b` |
-| `LLM_REASONING` | Enable reasoning mode | `true` |
-| `MAX_TOOL_RETRY` | Max retries on tool failure | `5` |
-
-### Semantic Router
-
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `ROUTER_TYPE` | Router strategy | `semantic` |
-| `ROUTER_PROVIDER` | Embedding backend for routing | `ollama` |
-| `ROUTER_MODEL` | Embedding model for routing | `gemma4:26b` |
-| `TOOL_KB` | Path to the tool knowledge base JSON | `data/tool_kb.json` |
-
-### Embedding
-
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `EMBEDDING_PROVIDER` | Embedding backend | `ollama` |
-| `EMBEDDING_MODEL` | Embedding model | `nomic-embed-text-v2-moe:latest` |
-| `DIMENSION` | Embedding dimension (blank = auto) | `768` |
-
-### Google Sheet
-
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `CREDENTIAL` | Path to service-account JSON | `path/to/service_account.json` |
-| `SHEET_KEY` | Spreadsheet key | `<key>` |
-
-### Logging
-
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `LOG_FILE` | Log output file | `logs/app.log` |
-| `LOG_LEVEL` | Log verbosity | `INFO` |
-
 ## Architecture
 
 ### System Overview
 
-The agent is a compiled LangGraph `StateGraph`. A user prompt enters the **router**, which semantically selects the most relevant sheet tools; the LLM is then bound to exactly those tools, executes them, and a check node either retries on failure or hands the result back to the LLM for a natural-language answer.
 
-```
-┌──────────────────────────────────────────────────────────┐
-│                    User Input (Vietnamese)               │
-│                      (Entry Point)                       │
-└──────────────────────────┬───────────────────────────────┘
-                           │
-                           ▼
-┌──────────────────────────────────────────────────────────┐
-│  ROUTER (Semantic Tool Router)                           │
-│  • Embeds the user question                              │
-│  • Cosine-matches against the tool knowledge base        │
-│  • Returns the top-k tools above a threshold             │
-└──────────────────────────┬───────────────────────────────┘
-                           │
-                 ┌─────────┴─────────┐
-        (no tools)│          │(tools matched)
-                  ▼          ▼
-          ┌──────────┐  ┌────────────────────────────────┐
-          │   LLM    │  │  LLM-BIND-TOOL                 │
-          │ (answer) │  │  • Binds only matched tools    │
-          └────┬─────┘  │  • Emits tool_calls            │
-               │         └──────────────┬─────────────────┘
-               │                        ▼
-               │         ┌────────────────────────────────┐
-               │         │  TOOLS (ToolNode)              │
-               │         │  • get / count / all, single & │
-               │         │    multi-sheet (Google Sheet)  │
-               │         └──────────────┬─────────────────┘
-               │                        ▼
-               │         ┌────────────────────────────────┐
-               │         │  CHECK-TOOL-ERROR              │
-               │         │  • error + retries left → bind  │
-               │         │  • success / max retries → llm  │
-               │         └──────────────┬─────────────────┘
-               │                        │
-               ▼                        ▼
-          ┌────────────────────────────────────────────────┐
-          │                   END                           │
-          │        Final Vietnamese answer                  │
-          └────────────────────────────────────────────────┘
+```mermaid
+---
+config:
+  flowchart:
+    curve: linear
+---
+graph TD;
+	__start__([<p>__start__</p>]):::first
+	router(router)
+	llm-bind-tool(llm-bind-tool)
+	tools(tools)
+	check-tool-error(check-tool-error)
+	__end__([<p>__end__</p>]):::last
+	__start__ --> router;
+	check-tool-error -.-> __end__;
+	check-tool-error -.-> llm-bind-tool;
+	llm-bind-tool --> tools;
+	router --> llm-bind-tool;
+	tools --> check-tool-error;
+	classDef default fill:#f2f0ff,line-height:1.2
+	classDef first fill-opacity:0
+	classDef last fill:#bfb6fc
 ```
 
-## Tools
+The graph shows the agent's execution flow as a LangGraph state machine:
 
-The agent exposes Google-Sheet transaction tools under `src/tools/gg_sheet`, covering retrieval and counting:
-
-| Tool | Scope | Purpose |
-|------|-------|---------|
-| `get_transaction` | Single sheet | Read rows from one worksheet with filters |
-| `get_transaction_multi_sheet` | Multiple sheets | Read rows from several worksheets at once |
-| `get_all_transactions` | All sheets | Read rows from every worksheet |
-| `count_transaction` | Single sheet | Count matching rows in one worksheet |
-| `count_transaction_multi_sheet` | Multiple sheets | Count matching rows across worksheets |
-| `count_all_transactions` | All sheets | Count matching rows across all worksheets |
-
-Filters available across tools: `from_date`, `to_date`, `from_amount`, `to_amount`, `transaction_type` (`Nhận` / `Chi`), `description`, and `payment_method` (`Thẻ` / `Tiền mặt`).
+- **`router`**: Decides which tool(s) to use for the user's query.
+- **`llm-bind-tool`**: Binds the selected tool(s) and composes the call.
+- **`tools`**: The chosen tool is executed.
+- **`check-tool-error`**: Check if tool is error. If a tool failed, the flow loops back to **`llm-bind-tool`** to retry with a corrected call (up to `MAX_TOOL_RETRY`). Once the tool succeeds, control also returns to **`llm-bind-tool`**, which now generates the final natural-language response.
 
 ## Usage
 
