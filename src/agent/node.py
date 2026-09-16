@@ -2,6 +2,7 @@ from typing import Any, TypedDict, Dict, List
 
 from langchain_core.messages import ToolMessage
 from langchain_core.runnables import Runnable
+from pydantic import ValidationError
 
 from src.agent.state import State
 
@@ -20,11 +21,11 @@ TOOL_EXECUTION_ERROR_TEMPLATE = (
     " Please fix the error and try again."
 )
 
-# TOOL_INVOCATION_ERROR_TEMPLATE = (
-#     "Error invoking tool '{tool_name}' with kwargs {tool_kwargs} with error:\n"
-#     " {error}\n"
-#     " Please fix the error and try again."
-# )
+TOOL_INVOCATION_ERROR_TEMPLATE = (
+    "Error invoking tool '{tool_name}' with kwargs {tool_kwargs} with error:\n"
+    " {error}\n"
+    " Please fix the error and try again."
+)
 
 
 class ToolCall(TypedDict):
@@ -85,6 +86,21 @@ class SequentialToolNode(Runnable):
                         name=tool_name,
                         tool_call_id=tool_call_id,
                         status="success",
+                    )
+                )
+            except ValidationError as e:
+                content = TOOL_INVOCATION_ERROR_TEMPLATE.format(
+                    tool_name=tool_name,
+                    tool_kwargs=tool_args,
+                    error=e,
+                )
+            
+                tool_messages.append(
+                    ToolMessage(
+                        content=content,
+                        name=tool_name,
+                        tool_call_id=tool_call_id,
+                        status="error",
                     )
                 )
 
@@ -161,6 +177,21 @@ class SequentialToolNode(Runnable):
                         name=tool_name,
                         tool_call_id=tool_call_id,
                         status="success",
+                    )
+                )
+            except ValidationError as e:
+                content = TOOL_INVOCATION_ERROR_TEMPLATE.format(
+                    tool_name=tool_name,
+                    tool_kwargs=tool_args,
+                    error=e,
+                )
+            
+                tool_messages.append(
+                    ToolMessage(
+                        content=content,
+                        name=tool_name,
+                        tool_call_id=tool_call_id,
+                        status="error",
                     )
                 )
 
