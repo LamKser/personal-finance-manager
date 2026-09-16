@@ -53,6 +53,8 @@ def filter_transaction(transaction: List[List[str]],
             continue
 
         filter_index.append(index)
+    if len(filter_index) == 1:
+        filter_index = [filter_index]
     result = list(itemgetter(*filter_index)(transaction))
     return result
 
