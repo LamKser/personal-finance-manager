@@ -1,12 +1,12 @@
-
-
 from typing import List, Tuple
 from operator import itemgetter
 from datetime import datetime
+from sys import maxsize
 
 
 OLD_DATE_FORMAT = "%a, %d-%m-%Y" # Ex: Mon, 17-08-2026
 NEW_DATE_FORMAT = "%d-%m-%Y" # Ex: 17-08-2026
+BIG_INTEGER = maxsize
 
 
 def filter_transaction(transaction: List[List[str]],
@@ -95,4 +95,31 @@ def get_merge_range_date(transaction: List[List[str]], date: str) -> Tuple[int, 
                 start_row = index
             end_row = index
     return start_row, end_row
-    
+
+def get_max_amount_index(transaction: List[List[str]]) -> List[int]:
+    max_amount = -1
+    result = []
+
+    for idx, row in enumerate(transaction[1:], start=1):
+        amount = convert_amount_to_float(row[1])
+
+        if amount > max_amount:
+            max_amount = amount
+            result = [idx]
+        elif amount == max_amount:
+            result.append(idx)
+    return result
+
+def get_min_amount_index(transaction: List[List[str]]) -> List[int]:
+    min_amount = BIG_INTEGER
+    result = []
+
+    for idx, row in enumerate(transaction[1:], start=1):
+        amount = convert_amount_to_float(row[1])
+
+        if amount < min_amount:
+            min_amount = amount
+            result = [idx]
+        elif amount == min_amount:
+            result.append(idx)
+    return result
