@@ -16,7 +16,7 @@ from src.settings import settings
 from src.prompt import SYSTEM_PROMPT
 
 # Tools
-from src.tools.gg_sheet import get_all_tools
+from src.tools import get_gg_sheet_tools
 from src.tools.date_time import get_today_datetime
 
 
@@ -40,7 +40,7 @@ class LangGraphAgent:
             self.callback = {"callbacks": [CallbackHandler()]}
             log.info("[TRACING] - Using Langfuse tracing")
         
-        self.tools = get_all_tools()
+        self.tools = get_gg_sheet_tools()
         self.llm = LLM(
             provider = settings.llm_provider,
             vllm_url = settings.vllm_url,
