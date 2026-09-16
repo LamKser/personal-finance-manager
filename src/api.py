@@ -8,7 +8,7 @@ from fastapi.responses import StreamingResponse
 
 from src.schema import UserQuery, Response
 from src.agent import LangGraphAgent
-from src.tools.gg_sheet import get_all_tools
+from src.tools import get_gg_sheet_tools
 from src.logger import logger
 
 logger()
@@ -25,7 +25,7 @@ app.add_middleware(
     allow_headers=["*"],  # Allows all headers
 )
 
-@app.get("/health")
+@app.get("/")
 def get_health_check():
     return {"status": "ok"}
 
@@ -33,7 +33,7 @@ def get_health_check():
 @app.get("/tools")
 def get_tools():
     return [
-        {tool.name: tool.description} for tool in get_all_tools()
+        {tool.name: tool.description} for tool in get_gg_sheet_tools()
     ]
 
 
