@@ -11,7 +11,7 @@ from langchain_core.tools import tool
 
 from src.schema import ToolResult
 from src.tools.gg_sheet.client import get_client
-from src.tools.gg_sheet.utils import fill_date, filter_transaction, get_max_amount_index, get_min_amount_index
+from src.tools.gg_sheet.utils.utils import fill_date, filter_transaction, get_max_amount_index, get_min_amount_index
 
 
 RANGE = "A:E"

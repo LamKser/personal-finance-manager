@@ -8,7 +8,7 @@ from langchain_core.tools import tool
 
 from src.schema import ToolResult
 from src.tools.gg_sheet.client import get_client
-from src.tools.gg_sheet.utils import fill_date, filter_transaction, convert_amount_to_float
+from src.tools.gg_sheet.utils.utils import fill_date, filter_transaction, convert_amount_to_float
 
 
 RANGE = "A:E"
@@ -42,6 +42,7 @@ def count_transaction(sheet_name: str,
     all_transaction = sheet.get_all_values(range_name=RANGE)
     all_transaction = fill_date(all_transaction)
     filtered_transaction = filter_transaction(all_transaction, from_date, to_date, from_amount, to_amount, transaction_type, description, payment_method)
+    log.debug("[TOOL] - `count_transaction` - Data: %s", filtered_transaction)
     log.info("[TOOL] - `count_transaction` - Tool executed successfully")
     return ToolResult(
         result=len(filtered_transaction) - 1, # Skip header row
@@ -81,6 +82,7 @@ def count_transaction_multi_sheet(sheet_names: List[str],
         filtered_transaction = filter_transaction(all_transaction, None, None, from_amount, to_amount, transaction_type, description, payment_method)
         result[name] = len(filtered_transaction) - 1 # Skip header row
         sheet_url[name] = sheet.url
+    log.debug("[TOOL] - `count_transaction_multi_sheet` - Data: %s", result)
     log.info("[TOOL] - `count_transaction_multi_sheet` - Tool executed successfully")
     return ToolResult(
         result=result,
@@ -119,6 +121,7 @@ def count_all_transactions(from_amount: float = None, to_amount: float = None,
         filtered_transaction = filter_transaction(all_transaction, None, None, from_amount, to_amount, transaction_type, description, payment_method)
         result[worksheet.title] = len(filtered_transaction) - 1 # Skip header row
         sheet_url[worksheet.title] = worksheet.url
+    log.debug("[TOOL] - `count_all_transactions` - Data: %s", result)
     log.info("[TOOL] - `count_all_transactions` - Tool executed successfully")
     return ToolResult(
         result=result,
@@ -228,6 +231,7 @@ def count_total_amount(sheet_name: str,
     filtered_transaction = filter_transaction(all_transaction, from_date, to_date, from_amount, to_amount, transaction_type, description, payment_method)
     result = sum([convert_amount_to_float(transaction[1]) for transaction in filtered_transaction[1:]])
 
+    log.debug("[TOOL] - `count_total_amount` - Data: %s", filtered_transaction)
     log.info("[TOOL] - `count_total_amount` - Tool executed successfully")
     return ToolResult(
         result=result,
@@ -267,7 +271,8 @@ def count_total_amount_multi_sheet(sheet_names: List[str],
         filtered_transaction = filter_transaction(all_transaction, from_date, to_date, from_amount, to_amount, transaction_type, description, payment_method)
         result[sheet_name] = sum([convert_amount_to_float(transaction[1]) for transaction in filtered_transaction[1:]])
         sheet_url[sheet_name] = sheet.url
-    
+
+    log.debug("[TOOL] - `count_total_amount_multi_sheet` - Data: %s", sheet_url)
     log.info("[TOOL] - `count_total_amount_multi_sheet` - Tool executed successfully")
     return ToolResult(
         result=result,
