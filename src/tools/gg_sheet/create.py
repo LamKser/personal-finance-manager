@@ -9,7 +9,7 @@ from langchain_core.tools import tool
 
 from src.schema import ToolResult
 from src.tools.gg_sheet.client import get_client
-from src.tools.gg_sheet.utils import fill_date, has_empty_cell, get_index_empty_cell_by_date, get_merge_range_date
+from src.tools.gg_sheet.utils.utils import fill_date, has_empty_cell, get_index_empty_cell_by_date, get_merge_range_date
 from src.tools.gg_sheet.cell_format import transaction_condition_style, payment_condition_style
 from src.tools.gg_sheet.cell_format import FORMAT_CURRENCY, FORMAT_DATE
 
