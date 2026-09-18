@@ -1,5 +1,6 @@
 from typing import List
 from typing_extensions import Literal
+import os
 from logging import getLogger
 
 from langgraph.graph import StateGraph, END, START
@@ -50,6 +51,12 @@ class LangGraphAgent:
         
         log.info("[LLM] - Using Provider: '%s' - Model: '%s' - think_mode: '%s'", settings.llm_provider, settings.llm_model, settings.llm_reasoning)
 
+        if settings.update_kb and os.path.exists(settings.tool_kb):
+            os.remove(settings.tool_kb)
+            log.info("[ToolKnowledgeBase] - Removed to update tool knowledge base file")
+        else:
+            log.info("[ToolKnowledgeBase] - Tool knowledge base does not exist/Not update Tool knowledge base file, not remove")
+
         self.tool_kb = ToolKnowledgeBase(settings.embedding_provider,
                                          settings.embedding_model,
                                          settings.dimension
@@ -68,7 +75,7 @@ class LangGraphAgent:
         graph = StateGraph(State)
         # Add nodes
         graph.add_node("router", self.router_node)
-        graph.add_node("llm-bind-tool", self.agent_bind_tool)
+        graph.add_node("llm-bind-tool", self.agent_bind_tool_node)
         # graph.add_node("tools", ToolNode(self.tools))
         graph.add_node("tools", SequentialToolNode(self.tools))
         graph.add_node("check-tool-error", self.check_tool_error_node)
@@ -99,15 +106,8 @@ class LangGraphAgent:
              "tool_call": []
              },
              config=self.callback)
-        log.info("[AGENT] - Response: %r", result["messages"][-1].content)
+        log.info("[AGENT] - Response: %s", result["messages"][-1].content)
         return result
-    
-    # def stream_(self, messages: List[str]):
-    #     for output in self.graph.stream(
-    #         {"messages": messages,
-    #          "user_input": messages[-1]}):
-    #         for key, value in output.items():
-    #             print(key, "----", value)
 
     async def astream(self, query: str):
         messages = [
@@ -148,7 +148,7 @@ class LangGraphAgent:
     #         "total_token": response.usage_metadata["total_tokens"]
     #     }
 
-    def agent_bind_tool(self, state: State):
+    def agent_bind_tool_node(self, state: State):
         llm_with_tools = self.llm.bind_tools(state["tool_call"])
         bind_tool_response = llm_with_tools.invoke(state["messages"])
         if not bind_tool_response.tool_calls:

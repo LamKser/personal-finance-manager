@@ -30,6 +30,7 @@ class Settings(BaseSettings):
     top_tool: int
     tool_threshold: float
     tool_kb: str
+    update_kb: bool
 
     # Embedding
     embedding_provider: str

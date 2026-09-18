@@ -43,9 +43,8 @@ class ToolKnowledgeBase:
                 f.write(
                     json.dumps(record, ensure_ascii=False) + ("\n" if i == len(self.tools) else ",\n")
                 )
-                log.info("[ToolKnowledgeBase] Creating for tool '%s'", name)
+                log.info("[ToolKnowledgeBase] - Tool #%d: Creating for tools '%s'", i, name)
                 f.flush()
             f.write("]\n")
-        log.info("[ToolKnowledgeBase] Created knowledge base for tool")
+        log.info("[ToolKnowledgeBase] - Created vector store for %d tools", i)
         return
-    
