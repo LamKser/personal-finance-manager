@@ -14,7 +14,7 @@ from src.router import SemanticToolRouter
 from src.knowledge_base import ToolKnowledgeBase
 from src.agent.state import State
 from src.settings import settings
-from src.prompt import SYSTEM_PROMPT
+from src.prompt import SYSTEM_PROMPT, REWRITE_PROMPT
 
 # Tools
 from src.tools import get_gg_sheet_tools
@@ -74,31 +74,31 @@ class LangGraphAgent:
     def build_graph(self):
         graph = StateGraph(State)
         # Add nodes
+        graph.add_node("rewrite", self.rewrite_node)
         graph.add_node("router", self.router_node)
         graph.add_node("llm-bind-tool", self.agent_bind_tool_node)
         # graph.add_node("tools", ToolNode(self.tools))
         graph.add_node("tools", SequentialToolNode(self.tools))
         graph.add_node("check-tool-error", self.check_tool_error_node)
-        # graph.add_node("llm", self.llm_invoke)
         log.info("[NODE] - Finished adding nodes")
 
         # Add edges
-        graph.add_edge(START, "router")
+        graph.add_edge(START, "rewrite")
+        graph.add_edge("rewrite", "router")
         graph.add_edge("router", "llm-bind-tool")
         graph.add_edge("llm-bind-tool", "tools")
         graph.add_edge("tools", "check-tool-error")
-        # graph.add_edge("llm", END)
         graph.add_edge("check-tool-error", END)
         log.info("[EDGE] - Finished adding edges")
         return graph.compile()
 
     def invoke_graph(self, query: str):
         log.info("[USER] - Prompt: %s", query)
-        messages = [{"role": "system", "content": SYSTEM_PROMPT.format(CURRENT_DATE=get_today_datetime())},
-                    {"role": "user", "content": query}]
+        # messages = [{"role": "system", "content": SYSTEM_PROMPT.format(CURRENT_DATE=get_today_datetime())},
+        #             {"role": "user", "content": query}]
         result = self.graph.invoke(
-            {"messages": messages,
-             "user_input": messages[-1]["content"],
+            {"messages": [],
+             "user_input": query,
              "total_retry_tool": 0,
              "total_token_tool_call": 0,
              "total_token_llm": 0,
@@ -137,16 +137,25 @@ class LangGraphAgent:
     
     # ============================== Build nodes ==============================
     # ------------------------------ Nodes ------------------------------
-    # def llm_invoke(self, state: State):
-    #     response = self.llm.invoke(state["messages"])
-    #     state["output"] = response
-    #     log.info("[NODE llm]: %r", response)
+    def rewrite_node(self, state: State):
+        rewrite_prompt = [
+            {"role": "system", "content": REWRITE_PROMPT.format(CURRENT_DATE=get_today_datetime())},
+            {"role": "user", "content": state["user_input"]}
+        ]
+        response = self.llm.invoke(rewrite_prompt)
+        rewritten_query = response.content
 
-    #     return {
-    #         "messages": [response],
-    #         "total_token_llm": response.usage_metadata["total_tokens"],
-    #         "total_token": response.usage_metadata["total_tokens"]
-    #     }
+        log.info("[NODE] - `rewrite` - Rewrite: %s", rewritten_query)
+
+        return {
+            "messages": [
+                {"role": "system", "content": SYSTEM_PROMPT.format(CURRENT_DATE=get_today_datetime())},
+                {"role": "user", "content": rewritten_query}
+            ],
+            "user_input": rewritten_query,
+            "total_token_llm": response.usage_metadata["total_tokens"],
+            "total_token": response.usage_metadata["total_tokens"]
+        }
 
     def agent_bind_tool_node(self, state: State):
         llm_with_tools = self.llm.bind_tools(state["tool_call"])
