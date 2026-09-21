@@ -1,12 +1,12 @@
 from langchain_openai import ChatOpenAI
 
 
-class VLLMModel:
-    def __init__(self, model_name: str, base_url: str, reasoning: bool | str | None = None):
+class VllmModel:
+    def __init__(self, model_name: str, base_url: str, api_key: str = "EMPTY"):
         self.llm = ChatOpenAI(
             model=model_name,
             base_url=base_url,
-            api_key="EMPTY"
+            api_key=api_key
         )
         
     def get_llm(self):

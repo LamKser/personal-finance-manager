@@ -42,14 +42,7 @@ class LangGraphAgent:
             log.info("[TRACING] - Using Langfuse tracing")
         
         self.tools = get_gg_sheet_tools()
-        self.llm = LLM(
-            provider = settings.llm_provider,
-            vllm_url = settings.vllm_url,
-            model = settings.llm_model,
-            reasoning = settings.llm_reasoning
-        ).get_llm()
-        
-        log.info("[LLM] - Using Provider: '%s' - Model: '%s' - think_mode: '%s'", settings.llm_provider, settings.llm_model, settings.llm_reasoning)
+        self.llm = LLM(settings.llm_provider).get_llm()
 
         if settings.update_kb and os.path.exists(settings.tool_kb):
             os.remove(settings.tool_kb)

@@ -14,12 +14,20 @@ class Settings(BaseSettings):
     # Telegram
     telegram_token: str
 
-    # Agent
     llm_provider: str
+    # ollama
+    ollama_model: str
+    ollama_reasoning: bool
+
+    # vllm
     vllm_url: str
-    api_key: str
-    llm_model: str
-    llm_reasoning: bool
+    vllm_api_key: str
+    vllm_model: str
+
+    # nvidia
+    nvidia_api_key: str
+    nvidia_model: str
+
     max_tool_retry: int
 
     # Router
