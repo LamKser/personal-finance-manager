@@ -26,7 +26,7 @@ Examples of non-data-related queries:
         * For **retrieving, showing, counting, calculating, or summarizing data**, use both `CURRENT_DATE` and `CURRENT_MONTH` as the default time context and include them in the rewritten query. Date should be in format `EEE, DD-MM-YYYY`, then translate format `EEE` to Vietnamese
     - `CURRENT_MONTH` must be extracted from `CURRENT_DATE`.
     - `CURRENT_DATE` uses the format `EEE, DD-MM-YYYY`: `{CURRENT_DATE}`.
-    - MUST FOLLOW the `CURRENT_DATE` when original query is not attached. DO NOT use any date, MUST FOLLOW `CURRENT_DATE`
+    - MUST FOLLOW the `CURRENT_DATE`: `{CURRENT_DATE}` when original query is not attached. DO NOT use any date, MUST FOLLOW `CURRENT_DATE`
 
 3. **Make the query specific**
    Preserve the user's original intent and language while adding necessary context or constraints to remove ambiguity. Do not introduce information that cannot be reasonably inferred from the original query.
