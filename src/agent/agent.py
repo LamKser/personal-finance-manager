@@ -117,7 +117,10 @@ class LangGraphAgent:
         ):
             if event["event"] != "on_chat_model_stream":
                 continue
-
+            node = event.get("metadata", {}).get("langgraph_node")
+            if node in {"rewrite"}:
+                continue
+            
             chunk = event["data"]["chunk"]
 
             if chunk.content:
