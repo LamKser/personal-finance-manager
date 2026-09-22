@@ -103,15 +103,10 @@ class LangGraphAgent:
         return result
 
     async def astream(self, query: str):
-        messages = [
-            {"role": "system", "content": SYSTEM_PROMPT.format(CURRENT_DATE=get_today_datetime())},
-            {"role": "user", "content": query}
-        ]
-        
         async for event in self.graph.astream_events(
             {
-                "messages": messages,
-                "user_input": messages[-1]["content"],
+                "messages": [],
+                "user_input": query,
                 "total_retry_tool": 0,
                 "total_token_tool_call": 0,
                 "total_token_llm": 0,

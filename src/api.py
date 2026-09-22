@@ -45,8 +45,8 @@ async def stream(user: UserQuery):
                         message=chunk,
                         timestamp=datetime.now(timezone.utc),
                     )
-            yield response.model_dump_json() + "\n"
-    return StreamingResponse(generate(), media_type="application/json")
+            yield f"data:{response.model_dump_json()}\n\n"
+    return StreamingResponse(generate(), media_type="text/event-stream")
 
 
 @app.post("/chat")
