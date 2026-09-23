@@ -75,3 +75,26 @@ def payment_condition_style(value: str, sheet_id: int,
         }
     }
     return style
+
+
+def add_border(sheet_id: int,
+               start_row_index: str, end_row_index: str,
+               start_column_index: str, end_column_index: str) -> Dict:
+    style = {
+        "updateBorders": {
+            "range": {
+                "sheetId": sheet_id,
+                "startRowIndex": start_row_index,
+                "endRowIndex": end_row_index,
+                "startColumnIndex": start_column_index,
+                "endColumnIndex": end_column_index,
+            },
+            "top": {"style": "SOLID"},
+            "bottom": {"style": "SOLID"},
+            "left": {"style": "SOLID"},
+            "right": {"style": "SOLID"},
+            "innerHorizontal": {"style": "SOLID"},
+            "innerVertical": {"style": "SOLID"},
+        }
+    }
+    return style

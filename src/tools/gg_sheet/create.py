@@ -10,7 +10,7 @@ from langchain_core.tools import tool
 from src.schema import ToolResult
 from src.tools.gg_sheet.client import get_client
 from src.tools.gg_sheet.utils.utils import fill_date, has_empty_cell, get_index_empty_cell_by_date, get_merge_range_date
-from src.tools.gg_sheet.cell_format import transaction_condition_style, payment_condition_style
+from src.tools.gg_sheet.cell_format import transaction_condition_style, payment_condition_style, add_border
 from src.tools.gg_sheet.cell_format import FORMAT_CURRENCY, FORMAT_DATE
 
 
@@ -91,7 +91,15 @@ def add_new_transaction(sheet_name: str,
     if start_row and end_row:
         worksheet.merge_cells(f"A{start_row}:A{end_row}", merge_type="MERGE_ALL")
         log.debug("[TOOL] - `add_new_transaction` - Merged date cells from row %d to %d", start_row, end_row)
-    
+
+    # Add borders
+    get_client().batch_update({
+        "requests": [
+            add_border(worksheet.id, start_row-1, end_row, 0, 5)
+        ]
+    })
+    log.debug("[TOOL] - `add_new_transaction` - Added borders A%d:E%d", start_row, end_row)
+
     log.info("[TOOL] - `add_new_transaction` - Tool executed successfully")
     return ToolResult(
         result=f"Add new transaction ({date} | {amount} | {transaction_type} | {description} | {payment_method})",
